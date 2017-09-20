@@ -32,7 +32,7 @@ class EventStream(object):
     One is added -- [settings]. Name may change once we know what the data are.
     The data after this marker is in little-endian words which we will take as 4 
     bytes, b0,b1,b2,b3.
-    Byte b3 identifies the word, by bit set:
+    Byte b3 is a bitmap which identifies the word, by bit set:
         RTC      16   real time clock (from Maciej, none spotted)
         TIMER    64   scaler input? may be other info
         MARKER 0xff   all bits set -- seems to seperate scalers from adc data?
@@ -162,26 +162,26 @@ class EventStream(object):
         return self.configdata
     
 
-class Histogram():
+class Histogram(object):
     """
-    create data histograms
+    Create a 1-d or 2-d histogram
+
+    Input:
+        group:     coincidence group of adcs: bitmap value indicating which
+                   adcs were read out in coincidence
+        adctuple:  tuple of strings giving adcs to use, named according to DAQ
+                   e.g. ('ADC1','ADC2') for 2-d or ('ADC1',) for 1-d
+                   For 1-d, a str is acceptable, e.g. 'ADC1'
+        sizetuple: Size of histo axis -- should be int power of two
+                   Simililar protocol to adctuple
+        stream:    EventStream object providing data -- needed for header info
+                   which gives ADC settings
+    Returns:
+        data:      reference to data array (numpy)
+        yl,xl:     adc names from histogram creation (for plot labels)
     """
-    def __init__(self, adctuple, sizetuple, stream):
-        """
-        Create a 1-d or 2-d histogram
-        
-        Input:
-            adctuple:  tuple of strings giving adcs to use, named according to DAQ
-                       e.g. ('ADC1','ADC2') for 2-d or ('ADC1',) for 1-d
-                       For 1-d, a str is acceptable, e.g. 'ADC1'
-            sizetuple: Size of histo axis -- should be int power of two
-                       Simililar protocol to adctuple
-            stream:    EventStream object providing data -- needed for header info
-                       which gives ADC settings
-        Returns:
-            data:      reference to data array (numpy)
-            yl,xl:     adc names from histogram creation (for plot labels)
-        """
+    def __init__(self, group, adctuple, sizetuple, stream):
+        self.coincidencegroup=group
         if isinstance(adctuple,str):  # assume it's a 1-d
             adctuple=(adctuple,)
             # now sizetuple should be an int
@@ -231,7 +231,64 @@ class Histogram():
             return self.data, self.adc1, 'x'
         else:
             return self.data, self.adc2, self.adc1
-            
+
+
+class Sorter(object):
+    """
+    Sort an eventstream into histograms
+    Input:
+        stream:     EventStream instance.
+        histlist:   List of histograms to sort into.
+        gatelist:   List of gates to apply to events (IGNORED FOR NOW).
+    """
+    def __init__( self, stream, histlist ):
+        self.stream = stream
+        self.eventgenerator = stream.eventgen()
+        self.histlist = histlist
+        self.gatelist = gatelist
+
+    def sort(self):
+        """
+        start sorting event stream.
+        eventually will run in background.
+        """
+        eventstream=self.eventstream
+        histlist=self.histlist
+        # collect stats
+        ntimer=0
+        nrtc=0
+        nmark=0
+        nevent=0
+        nunknown=0
+        nadc=[0,0,0,0]
+        sortadc=[]
+        for t,n,a,v in eventstream:
+            if t == TIMER:
+                ntimer+=1
+            elif t == RTC:
+                nrtc+=1
+            elif t == MARKER:
+                nmark+=1
+            elif t == ADCEVENT:
+                nevent+=1
+                nadc[n-1]+=1
+                # bitmap of event
+                bitmap=a[0]+a[1]*2+a[2]*4+a[3]*8
+                sortadc.append(bitmap)
+                for h in histlist:
+                    if h.concidencegroup==bitmap:
+                        h.increment(v)               
+            else:
+                nunknown+=1
+                print("huh?")
+
+        #print("Timer",T)
+        #print("Events",nevent)
+        #print("RTC",nrtc)
+        #print("Marks",nmark)
+        #print("Nadc",nadc)
+
+        
         
 
 if __name__ == "__main__":
@@ -244,11 +301,11 @@ if __name__ == "__main__":
     G=S.eventgen()
 
 #    h2=Histogram(('ADC2',),(512,),S)
-    h2=Histogram('ADC2',512,S)
-    h3=Histogram('ADC3',512,S)
-    h4=Histogram('ADC4',512,S)
+    h2=Histogram(ADC1+ADC2+ADC3,'ADC2',512,S)
+    h3=Histogram(ADC1+ADC2+ADC3,'ADC3',512,S)
+    h4=Histogram(ADC4,'ADC4',512,S)
     print(len(h2.data), h2.adc1,h2.divider1, h2.adcrange1, h2.index1, h2.size1)
-    h21=Histogram(('ADC2','ADC1'),(256,256),S)
+    h21=Histogram(ADC1+ADC2+ADC3,('ADC2','ADC1'),(256,256),S)
     print(np.shape(h21.data), h21.adc1,h21.divider1, h21.adcrange1, h21.index1, h21.size1)
     print(np.shape(h21.data), h21.adc2,h21.divider2, h21.adcrange2, h21.index2, h21.size2)
     

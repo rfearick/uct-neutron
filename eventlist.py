@@ -173,6 +173,8 @@ class Histogram(object):
     Create a 1-d or 2-d histogram
 
     Input:
+        stream:    EventStream object providing data -- needed for header info
+                   which gives ADC settings
         group:     coincidence group of adcs: bitmap value indicating which
                    adcs were read out in coincidence
         adctuple:  tuple of strings giving adcs to use, named according to DAQ
@@ -180,20 +182,27 @@ class Histogram(object):
                    For 1-d, a str is acceptable, e.g. 'ADC1'
         sizetuple: Size of histo axis -- should be int power of two
                    Simililar protocol to adctuple
-        stream:    EventStream object providing data -- needed for header info
-                   which gives ADC settings
+        labeltuple:Labels for use in plotting
     Returns:
         data:      reference to data array (numpy)
         yl,xl:     adc names from histogram creation (for plot labels)
     """
-    def __init__(self, group, adctuple, sizetuple, stream, label=None):
+    def __init__(self, stream, group, adctuple, sizetuple, label=None):
         self.coincidencegroup=group
+        self.label=label
+        if label==None:
+            labeltuple=adctuple
+        else:
+            labeltuple=label
         if isinstance(adctuple,str):  # assume it's a 1-d
             adctuple=(adctuple,)
-            # now sizetuple should be an int
+            # now sizetuple, labeltuple should be an int
             sizetuple=(sizetuple,)
+            labeltuple=(labeltuple,)
         if len(adctuple) != len(sizetuple):
             raise ValueError( "adc/size mismatch")
+        if len(adctuple) != len(labeltuple):
+            raise ValueError( "adc/label mismatch")
         if len(adctuple)>2:
             raise ValueError("More that 2 adcs")
         self.S=stream
@@ -202,6 +211,7 @@ class Histogram(object):
             self.dims=1
             self.adc1=adctuple[0]
             self.size1=sizetuple[0]
+            self.label1=labeltuple[0]
             self.adcrange1=C.getint(adctuple[0],'range')
             self.divider1 = self.adcrange1//sizetuple[0]
             self.index1=int(adctuple[0][3])-1
@@ -212,6 +222,8 @@ class Histogram(object):
             self.adc2=adctuple[1]
             self.size1=sizetuple[0]
             self.size2=sizetuple[1]
+            self.label1=labeltuple[0]
+            self.label2=labeltuple[1]
             self.adcrange1=C.getint(adctuple[0],'range')
             self.adcrange2=C.getint(adctuple[1],'range')
             self.divider1 = self.adcrange1//sizetuple[0]
@@ -237,6 +249,12 @@ class Histogram(object):
             return self.data, self.adc1, 'x'
         else:
             return self.data, self.adc2, self.adc1
+
+    def get_plotlabels(self):
+        if self.dims==1:
+            return self.data, self.label1, 'x'
+        else:
+            return self.data, self.label2, self.label1
 
 
 class Sorter(object):
@@ -307,11 +325,11 @@ if __name__ == "__main__":
     G=S.eventgen()
 
 #    h2=Histogram(('ADC2',),(512,),S)
-    h2=Histogram(ADC1+ADC2+ADC3,'ADC2',512,S)
-    h3=Histogram(ADC1+ADC2+ADC3,'ADC3',512,S)
-    h4=Histogram(ADC4,'ADC4',512,S)
+    h2=Histogram(S, ADC1+ADC2+ADC3, 'ADC2', 512)
+    h3=Histogram(S, ADC1+ADC2+ADC3, 'ADC3', 512)
+    h4=Histogram(S, ADC4, 'ADC4', 512)
     print(len(h2.data), h2.adc1,h2.divider1, h2.adcrange1, h2.index1, h2.size1)
-    h21=Histogram(ADC1+ADC2+ADC3,('ADC2','ADC1'),(256,256),S)
+    h21=Histogram(S, ADC1+ADC2+ADC3, ('ADC2','ADC1'), (256,256),label=('S','L'))
     print(np.shape(h21.data), h21.adc1,h21.divider1, h21.adcrange1, h21.index1, h21.size1)
     print(np.shape(h21.data), h21.adc2,h21.divider2, h21.adcrange2, h21.index2, h21.size2)
     
@@ -349,7 +367,7 @@ if __name__ == "__main__":
     print("Nadc",nadc)
 
     plt.figure(1)
-    data,yl,xl=h21.get_plotdata()
+    data,yl,xl=h21.get_plotlabels()
     plt.imshow(data,origin='lower',vmax=2000)
     plt.xlabel(yl)
     plt.ylabel(xl)

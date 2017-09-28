@@ -180,7 +180,7 @@ class Histogram(object):
         data:      reference to data array (numpy)
         yl,xl:     adc names from histogram creation (for plot labels)
     """
-    def __init__(self, group, adctuple, sizetuple, stream):
+    def __init__(self, group, adctuple, sizetuple, stream, label=None):
         self.coincidencegroup=group
         if isinstance(adctuple,str):  # assume it's a 1-d
             adctuple=(adctuple,)
@@ -349,7 +349,7 @@ if __name__ == "__main__":
     plt.ylabel(xl)
     plt.figure(2)
     data,yl,xl=h2.get_plotdata()
-    plt.plot(data,drawstyle='steps_mid')
+    plt.plot(data,drawstyle='steps-mid')
     plt.ylabel(yl)
     plt.figure(3)
     plt.hist(sortadc,bins=16)
@@ -357,10 +357,10 @@ if __name__ == "__main__":
     plt.ylabel('Adc distribution')
     plt.figure(4)
     data,yl,xl=h4.get_plotdata()
-    plt.plot(data,drawstyle='steps_mid')
+    plt.plot(data,drawstyle='steps-mid')
     plt.ylabel(yl)
     plt.figure(5)
     data,yl,xl=h3.get_plotdata()
-    plt.plot(data,drawstyle='steps_mid')
+    plt.plot(data,drawstyle='steps-mid')
     plt.ylabel(yl)
     plt.show()

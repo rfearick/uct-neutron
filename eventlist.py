@@ -2,13 +2,14 @@ import numpy as np
 import io
 import matplotlib.pyplot as plt
 import configparser
+from enum import Enum
 
 # list stream identifers
 TIMER=64
 PAD=128
 RTC=16
-# mysterious mark/space between timer events and adc events
-MARKER=0xff
+# marker between timer events and adc events
+SYNCHRON=0xff
 
 # our identifier for adc events
 ADCEVENT=1
@@ -25,6 +26,8 @@ class EventStream(object):
     """
     a class to encapsulate neutron daq .lst files
 
+    The list data format is described in Fast-Comtex manual for MPA3, sect. 7.6.3.
+
     The .lst file is a binary file with a first section consisting of a variable 
     length header in Windows INI format, with \r\n (CRLF) as line seperators.
     The header is terminated with the section marker [LISTDAT]\r\n.
@@ -34,10 +37,11 @@ class EventStream(object):
     bytes, b0,b1,b2,b3.
     Byte b3 is a bitmap which identifies the word, by bit set:
         RTC      16   real time clock (from Maciej, none spotted)
-        TIMER    64   scaler input? may be other info
-        MARKER 0xff   all bits set -- seems to seperate scalers from adc data?
+        TIMER    64   timer input, every 1 ms (unless timereduce set in header).
+                      Bits in b0 indicate if ADC is active. Use for dead time calc.
         PAD     128   ADC event is zero, but this bit may be set if adc data word 
                       is padded 
+        SYNCHRON MARKER 0xffffffff   all bits set -- seperate timer from adc data.
 
     Adcs triggered are indicated in b0: adc1 as bit0 ( value 1), adc2 as bit1 (2)
          adc3 as bit2 (4), adc4 as bit3 (8).
@@ -48,7 +52,7 @@ class EventStream(object):
     i.e., the two words for 3 adcs (say, adc1,adc2,adc4) are:
             [  0xff     | 0xff     |  adc1(lo) | adc1(hi)  ]
             [  adc2(lo) | adc2(hi) |  adc4(lo) | adc4(hi)  ]
-    If the word is padded, bit 128 of b3 is set.
+    If the word is padded, bit value 128 of b3 is set.
         
     """
     
@@ -78,6 +82,7 @@ class EventStream(object):
         s=list(b'[settings]')
         for b in self.header: s.extend(list(b))
         ba=bytearray(s)
+        self.configdatastring=ba.decode()
         C.read_string(ba.decode())
         self.configdata=C
 
@@ -106,10 +111,11 @@ class EventStream(object):
             etype=b[3]
             if etype == TIMER:
                 yield TIMER,0,0,0
-            elif etype == MARKER:
-                if b[0]!=0xff and b[1]!=0xff and b[2]!=0xff:
+            elif etype == SYNCHRON:
+#                if b[0]!=0xff and b[1]!=0xff and b[2]!=0xff:
+                if etype & b[0] & b[1] & b[2]!=SYNCHRON:
                     print("Hmm. Markers are more complicated")
-                yield MARKER,0,0,0
+                yield SYNCHRON,0,0,0
             elif (etype & RTC) != 0:
                 yield RTC,0,0,0
             else:
@@ -267,7 +273,7 @@ class Sorter(object):
                 ntimer+=1
             elif t == RTC:
                 nrtc+=1
-            elif t == MARKER:
+            elif t == SYNCHRON:
                 nmark+=1
             elif t == ADCEVENT:
                 nevent+=1
@@ -320,7 +326,7 @@ if __name__ == "__main__":
             T+=1
         elif t == RTC:
             nrtc+=1
-        elif t == MARKER:
+        elif t == SYNCHRON:
             nmark+=1
         elif t == ADCEVENT:
             nevent+=1

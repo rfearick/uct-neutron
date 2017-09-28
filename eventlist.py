@@ -180,6 +180,9 @@ class Histogram(object):
         adctuple:  tuple of strings giving adcs to use, named according to DAQ
                    e.g. ('ADC1','ADC2') for 2-d or ('ADC1',) for 1-d
                    For 1-d, a str is acceptable, e.g. 'ADC1'
+                   For 2-d, tuples are in (x,y) format assuming standard
+                   matplotlib.imshow() orientation, 
+                   i.e. numpy array is data[y,x] 
         sizetuple: Size of histo axis -- should be int power of two
                    Simililar protocol to adctuple
         labeltuple:Labels for use in plotting
@@ -242,19 +245,19 @@ class Histogram(object):
             i2=self.index2
             d1=self.divider1
             d2=self.divider2
-            self.data[v[i1]//d1,v[i2]//d2]+=1.0
+            self.data[v[i2]//d2,v[i1]//d1]+=1.0
 
     def get_plotdata(self):
         if self.dims==1:
             return self.data, self.adc1, 'x'
         else:
-            return self.data, self.adc2, self.adc1
+            return self.data, self.adc1, self.adc2
 
     def get_plotlabels(self):
         if self.dims==1:
             return self.data, self.label1, 'x'
         else:
-            return self.data, self.label2, self.label1
+            return self.data, self.label1, self.label2
 
 
 class Sorter(object):
@@ -329,7 +332,7 @@ if __name__ == "__main__":
     h3=Histogram(S, ADC1+ADC2+ADC3, 'ADC3', 512)
     h4=Histogram(S, ADC4, 'ADC4', 512)
     print(len(h2.data), h2.adc1,h2.divider1, h2.adcrange1, h2.index1, h2.size1)
-    h21=Histogram(S, ADC1+ADC2+ADC3, ('ADC2','ADC1'), (256,256),label=('S','L'))
+    h21=Histogram(S, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
     print(np.shape(h21.data), h21.adc1,h21.divider1, h21.adcrange1, h21.index1, h21.size1)
     print(np.shape(h21.data), h21.adc2,h21.divider2, h21.adcrange2, h21.index2, h21.size2)
     

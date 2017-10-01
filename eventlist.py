@@ -2,8 +2,43 @@ import numpy as np
 import io
 import matplotlib.pyplot as plt
 import configparser
-from enum import Enum
+from enum import IntEnum
 
+class EventFlags(IntEnum):
+    """
+    Define constants for use by module
+    """
+    # list stream identifers
+    TIMER=64
+    PAD=128
+    RTC=16
+    # marker between timer events and adc events
+    SYNCHRON=0xff
+
+    # our identifier for adc events
+    ADCEVENT=1
+
+    # adc bitmap
+    ADC1=1
+    ADC2=2
+    ADC3=4
+    ADC4=8
+
+# adc names for use in histogramming
+adcnames=('ADC1','ADC2','ADC3','ADC4')
+
+# for efficiency keep flags as globals
+"""
+TIMER   =EventFlags.TIMER
+PAD     =EventFlags.PAD
+RTC     =EventFlags.RTC
+SYNCHRON=EventFlags.SYNCHRON
+ADCEVENT=EventFlags.ADCEVENT
+ADC1=EventFlags.ADC1
+ADC2=EventFlags.ADC2
+ADC3=EventFlags.ADC3
+ADC4=EventFlags.ADC4
+"""
 # list stream identifers
 TIMER=64
 PAD=128
@@ -21,8 +56,7 @@ ADC3=4
 ADC4=8
 
 
-
-class EventStream(object):
+class EventSource(object):
     """
     a class to encapsulate neutron daq .lst files
 
@@ -53,7 +87,9 @@ class EventStream(object):
             [  0xff     | 0xff     |  adc1(lo) | adc1(hi)  ]
             [  adc2(lo) | adc2(hi) |  adc4(lo) | adc4(hi)  ]
     If the word is padded, bit value 128 of b3 is set.
-        
+    Occasionally there seem to be 4 zero bytes following an adc event.
+    This is not documented and may be some sort of bug.
+    Presently they are ignored.
     """
     
     def __init__( self, infile ):
@@ -86,7 +122,7 @@ class EventStream(object):
         C.read_string(ba.decode())
         self.configdata=C
 
-    def eventgen(self):
+    def eventstream(self):
         """
         generator for event stream
 
@@ -101,16 +137,26 @@ class EventStream(object):
             list of 4 booleans of adc status, list of 4 adc values)
         Only adcs with True status should be read out.
         """
+        import copy
         f=self.f
+        oldb=None
+        b=[0,0,0,0]
+        nunknown0=0
         while 1:
+            oldb=copy.deepcopy(b)
             b=f.read(4) # read 4 byte word
+            if b==b'\x00\x00\x00\x00':
+                #print("offset",f.tell())
+                nunknown0+=1
+                continue
             if len(b)<4:
+                print("nunknown0",nunknown0)
                 print('stop',b)
                 return
             # event type is in b[3]
             etype=b[3]
             if etype == TIMER:
-                yield TIMER,0,0,0
+                yield TIMER,b[0],0,0
             elif etype == SYNCHRON:
 #                if b[0]!=0xff and b[1]!=0xff and b[2]!=0xff:
                 if etype & b[0] & b[1] & b[2]!=SYNCHRON:
@@ -120,8 +166,13 @@ class EventStream(object):
                 yield RTC,0,0,0
             else:
                 padded=etype&PAD != 0
+                #if b[0]==0:
+                #    print(b,v)
+                #    #b=f.read(16)
+                #    print(b,oldb)
+                #    continue
                 n,a,v=self.__getevent(b[0], padded)
-                yield ADCEVENT,n,a,v
+                yield ADCEVENT,n,b[0],v
  
     def __getevent(self, adcs, padded):
         """
@@ -209,7 +260,7 @@ class Histogram(object):
         if len(adctuple)>2:
             raise ValueError("More that 2 adcs")
         self.S=stream
-        C=S.get_configuration()
+        C=stream.get_configuration()
         if len(adctuple)==1:
             self.dims=1
             self.adc1=adctuple[0]
@@ -268,28 +319,38 @@ class Sorter(object):
         histlist:   List of histograms to sort into.
         gatelist:   List of gates to apply to events (IGNORED FOR NOW).
     """
-    def __init__( self, stream, histlist ):
+    def __init__( self, stream, histlist, gatelist=None ):
         self.stream = stream
-        self.eventgenerator = stream.eventgen()
         self.histlist = histlist
         self.gatelist = gatelist
-
+        self._groups=[]
+        self._hists=[]
+        for h in histlist:
+            if h.coincidencegroup in self._groups:
+                i=self._groups.index(h.coincidencegroup)
+                self._hists[i].append(h)
+            else:
+                self._groups.append(int(h.coincidencegroup))
+                self._hists.append([h])
+            
     def sort(self):
         """
         start sorting event stream.
         eventually will run in background.
         """
-        eventstream=self.eventstream
-        histlist=self.histlist
+        eventstream=self.stream.eventstream()
+        #histlist=self.histlist
         # collect stats
         ntimer=0
         nrtc=0
         nmark=0
         nevent=0
-        nunknown=0
+        nunknown1=0
+        nunknown2=0
         nadc=[0,0,0,0]
         sortadc=[]
         for t,n,a,v in eventstream:
+            #print(t,n,a,v)
             if t == TIMER:
                 ntimer+=1
             elif t == RTC:
@@ -300,74 +361,103 @@ class Sorter(object):
                 nevent+=1
                 nadc[n-1]+=1
                 # bitmap of event
-                bitmap=a[0]+a[1]*2+a[2]*4+a[3]*8
-                sortadc.append(bitmap)
-                for h in histlist:
-                    if h.concidencegroup==bitmap:
-                        h.increment(v)               
+                bitmap=a#[0]+a[1]*2+a[2]*4+a[3]*8
+                if bitmap > 0:
+                    sortadc.append(bitmap)
+                    i=self._groups.index(bitmap)
+                    histlist=self._hists[i]
+                    for h in histlist:
+                        h.increment(v)
+                else:
+                    nunknown1+=1
             else:
-                nunknown+=1
+                nunknown2+=1
                 print("huh?")
 
-        #print("Timer",T)
-        #print("Events",nevent)
-        #print("RTC",nrtc)
-        #print("Marks",nmark)
-        #print("Nadc",nadc)
+        print("Timer",ntimer)
+        print("Events",nevent)
+        print("RTC",nrtc)
+        print("Marks",nmark)
+        print("Nadc",nadc,nadc[0]+nadc[1]+nadc[2]+nadc[3])
+        print("unknown1",nunknown1)
+        print("unknown2",nunknown2)
+        return sortadc
 
         
         
 
 if __name__ == "__main__":
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import time
    
-    infile="../NE213 100 MeV data/NE213_017_22Na.lst"
     infile="../IRMM FC 100 MeV data/FC_035.lst"
     infile="../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
+    #infile="../NE213 100 MeV data/NE213_019_137Cs.lst"
+    #infile="../NE213 100 MeV data/NE213_017_22Na.lst"
 
-    S=EventStream(infile)
-    G=S.eventgen()
+    E=EventSource(infile)
+    G=E.eventstream()
 
-#    h2=Histogram(('ADC2',),(512,),S)
-    h2=Histogram(S, ADC1+ADC2+ADC3, 'ADC2', 512)
-    h3=Histogram(S, ADC1+ADC2+ADC3, 'ADC3', 512)
-    h4=Histogram(S, ADC4, 'ADC4', 512)
+    h1=Histogram(E, ADC1+ADC2+ADC3, 'ADC1', 512)
+    h2=Histogram(E, ADC1+ADC2+ADC3, 'ADC2', 512)
+    h3=Histogram(E, ADC1+ADC2+ADC3, 'ADC3', 512)
+    h4=Histogram(E, ADC4, 'ADC4', 512)
     print(len(h2.data), h2.adc1,h2.divider1, h2.adcrange1, h2.index1, h2.size1)
-    h21=Histogram(S, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
+    h21=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
     print(np.shape(h21.data), h21.adc1,h21.divider1, h21.adcrange1, h21.index1, h21.size1)
     print(np.shape(h21.data), h21.adc2,h21.divider2, h21.adcrange2, h21.index2, h21.size2)
-    
+    histlist=[h1,h2,h3,h4,h21]
+    S=Sorter( E, histlist)
     T=0
     nrtc=0
     nmark=0
     nevent=0
     nadc=[0,0,0,0]
+    nunknown=0
     sortadc=[]
+    deadtimer=[]
+    t0=time.perf_counter()
+    # this section 87 s
+    sortadc=S.sort()
+    """
+    # this section 90.6 s
     for t,n,a,v in G:
         if t == TIMER:
             T+=1
         elif t == RTC:
             nrtc+=1
+            if n>0:
+                deadtimer.append(n)
         elif t == SYNCHRON:
             nmark+=1
         elif t == ADCEVENT:
             nevent+=1
             nadc[n-1]+=1
-            if n==3:# and v[0]>56:
+            if n==3 and v[0]<1024:
+                h1.increment(v)
                 h2.increment(v)
                 h3.increment(v)
                 h21.increment(v)
             if n==1:
                 h4.increment(v)
-            b=a[0]+a[1]*2+a[2]*4+a[3]*8
+            else:
+                nunknown+=1
+            b=a#[0]+a[1]*2+a[2]*4+a[3]*8
             sortadc.append(b)
         else:
             print("huh?")
-                   
+                  
     print("Timer",T)
     print("Events",nevent)
     print("RTC",nrtc)
     print("Marks",nmark)
-    print("Nadc",nadc)
+    print("Nadc",nadc,nadc[0]+nadc[1]+nadc[2]+nadc[3])
+    print("unknown",nunknown)
+    """
+    t1=time.perf_counter()
+    print("Elapsed time:", t1-t0, " s")
 
     plt.figure(1)
     data,yl,xl=h21.get_plotlabels()
@@ -379,7 +469,7 @@ if __name__ == "__main__":
     plt.plot(data,drawstyle='steps-mid')
     plt.ylabel(yl)
     plt.figure(3)
-    plt.hist(sortadc,bins=16)
+    plt.hist(sortadc,bins=16,range=(0,15))
     plt.xlim(0,16)
     plt.ylabel('Adc distribution')
     plt.figure(4)
@@ -388,6 +478,10 @@ if __name__ == "__main__":
     plt.ylabel(yl)
     plt.figure(5)
     data,yl,xl=h3.get_plotdata()
+    plt.plot(data,drawstyle='steps-mid')
+    plt.ylabel(yl)
+    plt.figure(6)
+    data,yl,xl=h1.get_plotdata()
     plt.plot(data,drawstyle='steps-mid')
     plt.ylabel(yl)
     plt.show()

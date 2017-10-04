@@ -200,22 +200,19 @@ class EventSource(object):
         # Check bits to see which adcs fired.
         # Normalize so only lowest bit set
         # Keep results in isadc[].
-        isadc=[]
         adc1=adcs&ADC1
-        isadc.append(adc1)
         adc2=(adcs&ADC2)//ADC2
-        isadc.append(adc2)
         adc3=(adcs&ADC3)//ADC3
-        isadc.append(adc3)
         adc4=(adcs&ADC4)//ADC4
-        isadc.append(adc4)
+        isadc=[adc1,adc2,adc3,adc4]
         Nadcs=adc1+adc2+adc3+adc4
         # unpack values. If adc did not fire, return zero.
         values=[]
         if padded:
             b=f.read(2)
-            if b[0]!= 0xff or b[1]!=0xff:
+            if b!= b'\xff\xff':
                 print("Pad error")
+        values=[0,0,0,0]
         for i in range(4):
             if isadc[i]==1:
                 b=f.read(2)
@@ -223,9 +220,7 @@ class EventSource(object):
                 ints=256*int(b[1])+int(b[0])
                 # mask adc word to adcrange
                 ints=ints&self.adcmasks[i]
-                values.append(ints)
-            else:
-                values.append(0)
+                values[i]=ints
         return Nadcs,isadc,values
 
     def get_header(self):

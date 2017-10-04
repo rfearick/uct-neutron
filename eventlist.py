@@ -410,22 +410,22 @@ if __name__ == "__main__":
     print(np.shape(h21.data), h21.adc2,h21.divider2, h21.adcrange2, h21.index2, h21.size2)
     histlist=[h1,h2,h3,h4,h21]
     S=Sorter( E, histlist)
-    T=0
+    sortadc=[]
+    deadtimer=[]
+    t0=time.perf_counter()
+    # this section 100 s (macmini)
+    sortadc=S.sort()
+    """
+    # this section 103s (macmini)
+    ntimer=0
     nrtc=0
     nmark=0
     nevent=0
     nadc=[0,0,0,0]
     nunknown=0
-    sortadc=[]
-    deadtimer=[]
-    t0=time.perf_counter()
-    # this section 87 s
-    sortadc=S.sort()
-    """
-    # this section 90.6 s
     for t,n,a,v in G:
         if t == TIMER:
-            T+=1
+            ntimer+=1
         elif t == RTC:
             nrtc+=1
             if n>0:
@@ -449,7 +449,7 @@ if __name__ == "__main__":
         else:
             print("huh?")
                   
-    print("Timer",T)
+    print("Timer",ntimer)
     print("Events",nevent)
     print("RTC",nrtc)
     print("Marks",nmark)

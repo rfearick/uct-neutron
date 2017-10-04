@@ -78,15 +78,22 @@ def pos_callback(event):
     """
     print(event.inaxes)
     ax=event.inaxes
-    if ax==ax12 or ax==ax11:
+    if ax in axesgroup1:
+        currentaxes=axesgroup1
         chans[0]=event.xdata
-    elif ax==ax22 or ax==ax21:
+    elif ax in axesgroup2:
+        currentaxes=axesgroup2
         chans[1]=event.xdata
-    elif ax==ax32 or ax==ax31:
+    elif ax in axesgroup3:
+        currentaxes=axesgroup3
         if chans[2]==None:
             chans[2]=event.xdata
         elif chans[3]==None:
             chans[3]=event.xdata
+    else:
+        return
+    currentaxes[0].axvline(event.xdata)
+    currentaxes[1].axvline(event.xdata)
     if chans[0] is not None and chans[1] is not None and chans[2] is not None and chans[3] is not None:
         if chans[2]>chans[3]:
             c3=chans[2]
@@ -132,7 +139,8 @@ plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,150)
 #plt.ylim(-200,200)
-multi1 = MultiCursor(f1.canvas, (ax11, ax12), color='r', lw=2,
+axesgroup1=(ax11,ax12)
+multi1 = MultiCursor(f1.canvas, axesgroup1, color='r', lw=2,
                      horizOn=False, vertOn=True, useblit=False)
 
 ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
@@ -148,7 +156,8 @@ plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,50)
 #plt.ylim(-200,200)
-multi2 = MultiCursor(f1.canvas, (ax21, ax22), color='r', lw=2,
+axesgroup2=(ax21,ax22)
+multi2 = MultiCursor(f1.canvas, axesgroup2, color='r', lw=2,
                     horizOn=False, vertOn=True, useblit=False)
 
 ax31=plt.subplot2grid( (4,4), (2,0),colspan=2)
@@ -165,13 +174,15 @@ plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(50,150)
 plt.ylim(-200,200)
-multi3 = MultiCursor(f1.canvas, (ax31, ax32), color='r', lw=2,
+axesgroup3=[ax31,ax32]
+multi3 = MultiCursor(f1.canvas, axesgroup3, color='r', lw=2,
                     horizOn=False, vertOn=True, useblit=False)
 
 ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
 plt.xlabel('Energy [MeV]')
 plt.ylabel('Channel')
 plt.tight_layout()
+
 
 cid_multi=f1.canvas.mpl_connect('button_press_event',pos_callback)
 cid1=f1.canvas.mpl_connect('axes_enter_event',fig_callback)

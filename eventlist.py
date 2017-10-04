@@ -55,6 +55,9 @@ ADC2=2
 ADC3=4
 ADC4=8
 
+# number of adcs
+TOTALADCS=4
+
 # powers of two, for convenience
 # unlikely adc is set to many of these, but ...
 powers_of_two=[2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]
@@ -152,13 +155,9 @@ class EventSource(object):
             list of 4 booleans of adc status, list of 4 adc values)
         Only adcs with True status should be read out.
         """
-        #import copy
         f=self.f
-        #oldb=None
-        b=[0,0,0,0]
         nunknown0=0
         while 1:
-            #oldb=copy.deepcopy(b)
             b=f.read(4) # read 4 byte word
             if b==b'\x00\x00\x00\x00':
                 #print("offset",f.tell())
@@ -170,8 +169,9 @@ class EventSource(object):
                 return
             # event type is in b[3]
             etype=b[3]
+            b0=b[0]
             if etype == TIMER:
-                yield TIMER,b[0],0,0
+                yield TIMER,b0,0,0
             elif etype == SYNCHRON:
 #                if b[0]!=0xff and b[1]!=0xff and b[2]!=0xff:
 #                if etype & b[0] & b[1] & b[2]!=SYNCHRON:
@@ -187,8 +187,8 @@ class EventSource(object):
                 #    #b=f.read(16)
                 #    print(b,oldb)
                 #    continue
-                n,a,v=self.__getevent(b[0], padded)
-                yield ADCEVENT,n,b[0],v
+                n,a,v=self.__getevent(b0, padded)
+                yield ADCEVENT,n,b0,v
  
     def __getevent(self, adcs, padded):
         """
@@ -207,13 +207,12 @@ class EventSource(object):
         isadc=[adc1,adc2,adc3,adc4]
         Nadcs=adc1+adc2+adc3+adc4
         # unpack values. If adc did not fire, return zero.
-        values=[]
         if padded:
             b=f.read(2)
             if b!= b'\xff\xff':
                 print("Pad error")
         values=[0,0,0,0]
-        for i in range(4):
+        for i in range(TOTALADCS):
             if isadc[i]==1:
                 b=f.read(2)
                 # assemble ADC word
@@ -268,9 +267,9 @@ class Histogram(object):
             sizetuple=(sizetuple,)
             labeltuple=(labeltuple,)
         if len(adctuple) != len(sizetuple):
-            raise ValueError( "adc/size mismatch")
+            raise ValueError("adc/size mismatch")
         if len(adctuple) != len(labeltuple):
-            raise ValueError( "adc/label mismatch")
+            raise ValueError("adc/label mismatch")
         if len(adctuple)>2:
             raise ValueError("More that 2 adcs")
         self.S=stream
@@ -300,7 +299,7 @@ class Histogram(object):
             self.index2=int(adctuple[1][3])-1
             self.data=np.zeros(sizetuple)
         else:
-            raise ValueError("Number of ADCs not in range")
+            raise ValueError("Number of ADCs must be 1 or 2")
 
     def increment(self,v):
         if self.dims==1:

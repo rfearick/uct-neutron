@@ -101,7 +101,7 @@ class EventSource(object):
         initialise class instance
         infile: path to lst file
         """
-        f=open(infile,"rb")
+        f=open(infile,"rb",buffering=81920)
         self.filename=infile
         self.f=f
         # read header into list

@@ -55,6 +55,10 @@ ADC2=2
 ADC3=4
 ADC4=8
 
+# powers of two, for convenience
+# unlikely adc is set to many of these, but ...
+powers_of_two=[2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]
+
 
 class EventSource(object):
     """
@@ -121,6 +125,17 @@ class EventSource(object):
         self.configdatastring=ba.decode()
         C.read_string(ba.decode())
         self.configdata=C
+        adcranges=[0,0,0,0]
+        adcmasks=[0,0,0,0]
+        for i in range(len(adcnames)):
+            adcrange=C.getint(adcnames[i],'range')
+            if adcrange not in powers_of_two:
+                raise ValueError('ADC range is not a power of two')
+            adcranges[i]=adcrange
+            adcmasks[i]=adcrange-1
+        self.adcranges=adcranges
+        self.adcmasks=adcmasks
+
 
     def eventstream(self):
         """
@@ -137,13 +152,13 @@ class EventSource(object):
             list of 4 booleans of adc status, list of 4 adc values)
         Only adcs with True status should be read out.
         """
-        import copy
+        #import copy
         f=self.f
-        oldb=None
+        #oldb=None
         b=[0,0,0,0]
         nunknown0=0
         while 1:
-            oldb=copy.deepcopy(b)
+            #oldb=copy.deepcopy(b)
             b=f.read(4) # read 4 byte word
             if b==b'\x00\x00\x00\x00':
                 #print("offset",f.tell())
@@ -159,7 +174,8 @@ class EventSource(object):
                 yield TIMER,b[0],0,0
             elif etype == SYNCHRON:
 #                if b[0]!=0xff and b[1]!=0xff and b[2]!=0xff:
-                if etype & b[0] & b[1] & b[2]!=SYNCHRON:
+#                if etype & b[0] & b[1] & b[2]!=SYNCHRON:
+                if b != b'\xff\xff\xff\xff':
                     print("Hmm. Markers are more complicated")
                 yield SYNCHRON,0,0,0
             elif (etype & RTC) != 0:
@@ -203,7 +219,10 @@ class EventSource(object):
         for i in range(4):
             if isadc[i]==1:
                 b=f.read(2)
+                # assemble ADC word
                 ints=256*int(b[1])+int(b[0])
+                # mask adc word to adcrange
+                ints=ints&self.adcmasks[i]
                 values.append(ints)
             else:
                 values.append(0)
@@ -414,6 +433,7 @@ if __name__ == "__main__":
     deadtimer=[]
     t0=time.perf_counter()
     # this section 100 s (macmini)
+    # a few optimisations, now 96 s (macmini)
     sortadc=S.sort()
     """
     # this section 103s (macmini)

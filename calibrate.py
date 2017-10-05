@@ -33,16 +33,22 @@ calibration is calculated via linear regression, and plotted in a 4th view.
 infileCs="../NE213 100 MeV data/NE213_019_137Cs.lst"
 infileNa="../NE213 100 MeV data/NE213_017_22Na.lst"
 infileAmBe="../NE213 100 MeV data/NE213_020_AmBe.lst"
+# add in TAC
+infileTAC="../NE213 100 MeV data/NE213_022_TACcal.lst"
+
+
 
 # define event sources
 ENa=EventSource(infileNa)
 ECs=EventSource(infileCs)
 EAmBe=EventSource(infileAmBe)
+ETAC=EventSource(infileTAC)
 
 # get event generators
 GNa=ENa.eventstream()
 GCs=ECs.eventstream()
 GAmBe=EAmBe.eventstream()
+GTAC=ETAC.eventstream()
 
 # define histograms; use fake adc4 to avoid problem in currently buggy eventlist.py
 htmp=Histogram(ENa, ADC4, 'ADC4', 512, label="22Na")
@@ -50,6 +56,7 @@ htmp=Histogram(ENa, ADC4, 'ADC4', 512, label="22Na")
 hNa=Histogram(ENa, ADC1+ADC2+ADC3, 'ADC1', 512, label="22Na")
 hCs=Histogram(ECs, ADC1+ADC2+ADC3, 'ADC1', 512, label="137Cs")
 hAmBe=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC1', 512, label='AmBe')
+hTAC=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
 
 # sort data. eventually must make multistream sorter!
 SNa=Sorter(ENa, [hNa,htmp] )
@@ -65,9 +72,13 @@ htmp=Histogram(EAmBe, ADC4, 'ADC4', 512, label="22Na")
 SAmBe=Sorter(EAmBe, [hAmBe,htmp] )
 sortadc=SAmBe.sort()
 
+STAC=Sorter(ETAC, [hTAC,htmp] )
+sortadc=STAC.sort()
+
 # calibration data
 chans=[None,None,None,None]
 edges=[1.062,0.477,3.42,4.20]
+slope,intercept=0.0,0.0
 
 # define callbacks for matplotlib multicursor
 def pos_callback(event):
@@ -76,7 +87,6 @@ def pos_callback(event):
     put data into chan array at correct index.
     when all 4 data points, calibrate and plot line 
     """
-    print(event.inaxes)
     ax=event.inaxes
     if ax in axesgroup1:
         currentaxes=axesgroup1
@@ -101,7 +111,7 @@ def pos_callback(event):
             chans[2]=c2
             chans[3]=c3
         slope, intercept,r,p,stderr=linregress(edges,chans)
-        print("slope,intercept",slope,intercept)
+        print("L calibration: slope,intercept",slope, " ch/MeV", intercept, " ch")
         xt=np.linspace(0.0,5.0,100.0)
         #plt.figure(4)
         ax4.plot(edges,chans,'bo')
@@ -114,13 +124,26 @@ def fig_callback(event):
     """
     Connect button click to active axes.
     """
-    global fcur, cid_multi, multi
-    print("enter",event.canvas)
-    c=event.canvas
+    global multi
+    ax=event.inaxes
+    if ax in axesgroup1:
+        currentaxes=axesgroup1
+    elif ax in axesgroup2:
+        currentaxes=axesgroup2
+    elif ax in axesgroup3:
+        currentaxes=axesgroup3
+    else:
+        return
+    #if multi is not None: multi.delete()
+    multi=MultiCursor(f1.canvas, currentaxes, color='r', lw=2,
+                    horizOn=False, vertOn=True, useblit=False)
+
+        
+    
     
 cid_multi=None
 fcur=None
-
+multi=None
 
 # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
 # calibrations.
@@ -140,8 +163,8 @@ plt.xlabel("channel")
 plt.xlim(0,150)
 #plt.ylim(-200,200)
 axesgroup1=(ax11,ax12)
-multi1 = MultiCursor(f1.canvas, axesgroup1, color='r', lw=2,
-                     horizOn=False, vertOn=True, useblit=False)
+#multi1 = MultiCursor(f1.canvas, axesgroup1, color='r', lw=2,
+#                     horizOn=False, vertOn=True, useblit=False)
 
 ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
 data,yl,xl=hCs.get_plotlabels()
@@ -157,8 +180,8 @@ plt.xlabel("channel")
 plt.xlim(0,50)
 #plt.ylim(-200,200)
 axesgroup2=(ax21,ax22)
-multi2 = MultiCursor(f1.canvas, axesgroup2, color='r', lw=2,
-                    horizOn=False, vertOn=True, useblit=False)
+#multi2 = MultiCursor(f1.canvas, axesgroup2, color='r', lw=2,
+#                    horizOn=False, vertOn=True, useblit=False)
 
 ax31=plt.subplot2grid( (4,4), (2,0),colspan=2)
 data,yl,xl=hAmBe.get_plotlabels()
@@ -175,8 +198,8 @@ plt.xlabel("channel")
 plt.xlim(50,150)
 plt.ylim(-200,200)
 axesgroup3=[ax31,ax32]
-multi3 = MultiCursor(f1.canvas, axesgroup3, color='r', lw=2,
-                    horizOn=False, vertOn=True, useblit=False)
+#multi3 = MultiCursor(f1.canvas, axesgroup3, color='r', lw=2,
+#                    horizOn=False, vertOn=True, useblit=False)
 
 ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
 plt.xlabel('Energy [MeV]')
@@ -184,10 +207,46 @@ plt.ylabel('Channel')
 plt.tight_layout()
 
 
-cid_multi=f1.canvas.mpl_connect('button_press_event',pos_callback)
-cid1=f1.canvas.mpl_connect('axes_enter_event',fig_callback)
-#cid2=f1.canvas.mpl_connect('axes_enter_event',fig_callback)
-#cid3=f1.canvas.mpl_connect('axes_enter_event',fig_callback)
+cid_click=f1.canvas.mpl_connect('button_press_event',pos_callback)
+cid_enter=f1.canvas.mpl_connect('axes_enter_event',fig_callback)
 
+
+f2=plt.figure(2)
+data,yl,xl=hTAC.get_plotlabels()
+
+peakpos=[]
+N=len(data)
+# scan through data and get mean peak positions in a fairly crude search
+x=np.arange(N)
+i=2
+print(N)
+while i<N-5:
+    if data[i]<2 and data[i+4]<2:
+        s=np.sum(data[i:i+5]*x[i:i+5])
+        if s>5:
+            print(i,s,data[i])
+            s=s/np.sum(data[i:i+5])
+            peakpos.append(s)
+            i=i+5
+        else:
+            i=i+1
+    else:
+        i=i+1
+3#calculate tac calibration in channels/ns
+peakpos=np.array(peakpos)
+N=len(peakpos)//2
+taccalstep=20.0 #ns
+diff=0.0
+for i in range(N):
+    diff+=(peakpos[i+N]-peakpos[i])/N**2
+print('mean peak spacing in TAC spectrum=', diff)
+print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)") 
+plt.subplot(211)
+plt.plot(data,drawstyle='steps-mid')
+plt.ylabel(yl)
+plt.xlabel("channel")
+plt.subplot(212)
+plt.plot(peakpos,'bo')
 
 plt.show()
+

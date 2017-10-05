@@ -111,7 +111,8 @@ def pos_callback(event):
             chans[2]=c2
             chans[3]=c3
         slope, intercept,r,p,stderr=linregress(edges,chans)
-        print("L calibration: slope,intercept",slope, " ch/MeV", intercept, " ch")
+        print("L calibration: slope,intercept",slope*2, " ch/MeV", intercept*2, " ch")
+        print("Calibration corrected to full event size (1024)") 
         xt=np.linspace(0.0,5.0,100.0)
         #plt.figure(4)
         ax4.plot(edges,chans,'bo')

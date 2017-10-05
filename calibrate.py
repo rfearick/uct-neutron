@@ -232,21 +232,29 @@ while i<N-5:
             i=i+1
     else:
         i=i+1
-3#calculate tac calibration in channels/ns
+
+#calculate tac calibration in channels/ns
 peakpos=np.array(peakpos)
 N=len(peakpos)//2
 taccalstep=20.0 #ns
 diff=0.0
+# from peakpos, avoid 'method of fools'
 for i in range(N):
     diff+=(peakpos[i+N]-peakpos[i])/N**2
 print('mean peak spacing in TAC spectrum=', diff)
-print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)") 
+print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)")
+# from linregress
+tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
+print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
+
 plt.subplot(211)
 plt.plot(data,drawstyle='steps-mid')
 plt.ylabel(yl)
 plt.xlabel("channel")
 plt.subplot(212)
 plt.plot(peakpos,'bo')
+plt.plot(np.arange(len(peakpos)),np.arange(len(peakpos))*tacslope+tacintercept)
+
 
 plt.show()
 

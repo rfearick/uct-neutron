@@ -285,7 +285,7 @@ class Histogram(object):
             self.size1=sizetuple[0]
             self.label1=labeltuple[0]
             self.adcrange1=C.getint(adctuple[0],'range')
-            self.divider1 = self.adcrange1//sizetuple[0]
+            self.divisor1 = self.adcrange1//sizetuple[0]
             self.index1=int(adctuple[0][3])-1
             self.data=np.zeros(sizetuple[0])
         elif len(adctuple)==2:
@@ -298,8 +298,8 @@ class Histogram(object):
             self.label2=labeltuple[1]
             self.adcrange1=C.getint(adctuple[0],'range')
             self.adcrange2=C.getint(adctuple[1],'range')
-            self.divider1 = self.adcrange1//sizetuple[0]
-            self.divider2 = self.adcrange2//sizetuple[1]
+            self.divisor1 = self.adcrange1//sizetuple[0]
+            self.divisor2 = self.adcrange2//sizetuple[1]
             self.index1=int(adctuple[0][3])-1
             self.index2=int(adctuple[1][3])-1
             self.data=np.zeros(sizetuple)
@@ -308,12 +308,12 @@ class Histogram(object):
 
     def increment(self,v):
         if self.dims==1:
-            self.data[v[self.index1]//self.divider1]+=1.0
+            self.data[v[self.index1]//self.divisor1]+=1.0
         elif self.dims==2:
             i1=self.index1
             i2=self.index2
-            d1=self.divider1
-            d2=self.divider2
+            d1=self.divisor1
+            d2=self.divisor2
             self.data[v[i2]//d2,v[i1]//d1]+=1.0
 
     def get_plotdata(self):
@@ -423,10 +423,10 @@ if __name__ == "__main__":
     h2=Histogram(E, ADC1+ADC2+ADC3, 'ADC2', 512)
     h3=Histogram(E, ADC1+ADC2+ADC3, 'ADC3', 512)
     h4=Histogram(E, ADC4, 'ADC4', 512)
-    print(len(h2.data), h2.adc1,h2.divider1, h2.adcrange1, h2.index1, h2.size1)
+    print(len(h2.data), h2.adc1,h2.divisor1, h2.adcrange1, h2.index1, h2.size1)
     h21=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
-    print(np.shape(h21.data), h21.adc1,h21.divider1, h21.adcrange1, h21.index1, h21.size1)
-    print(np.shape(h21.data), h21.adc2,h21.divider2, h21.adcrange2, h21.index2, h21.size2)
+    print(np.shape(h21.data), h21.adc1,h21.divisor1, h21.adcrange1, h21.index1, h21.size1)
+    print(np.shape(h21.data), h21.adc2,h21.divisor2, h21.adcrange2, h21.index2, h21.size2)
     histlist=[h1,h2,h3,h4,h21]
     S=Sorter( E, histlist)
     sortadc=[]

@@ -1,3 +1,8 @@
+# for mac
+import matplotlib
+matplotlib.use("Qt5Agg")
+
+
 import numpy as np
 import io
 import matplotlib.pyplot as plt
@@ -377,10 +382,11 @@ class Sorter(object):
                 bitmap=a#[0]+a[1]*2+a[2]*4+a[3]*8
                 if bitmap > 0:
                     sortadc.append(bitmap)
-                    i=self._groups.index(bitmap)
-                    histlist=self._hists[i]
-                    for h in histlist:
-                        h.increment(v)
+                    if bitmap in self._groups:
+                        i=self._groups.index(bitmap)
+                        histlist=self._hists[i]
+                        for h in histlist:
+                            h.increment(v)
                 else:
                     nunknown1+=1
             else:

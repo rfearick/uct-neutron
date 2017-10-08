@@ -149,15 +149,14 @@ plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,150)
 ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
-diffdata=data[1:]-data[0:-1]
+diffdata=np.zeros(len(data))
+diffdata[1:-1]=(data[2:]-data[0:-2])/2
 plt.plot(diffdata,drawstyle='steps-mid')
 plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,150)
 #plt.ylim(-200,200)
 axesgroup1=(ax11,ax12)
-#multi1 = MultiCursor(f1.canvas, axesgroup1, color='r', lw=2,
-#                     horizOn=False, vertOn=True, useblit=False)
 
 ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
 data,yl,xl=hCs.get_plotlabels()
@@ -166,15 +165,14 @@ plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,50)
 ax22=plt.subplot2grid( (4,4), (1,2),colspan=2)
-diffdata=data[1:]-data[0:-1]
+diffdata=np.zeros(len(data))
+diffdata[1:-1]=(data[2:]-data[0:-2])/2
 plt.plot(diffdata,drawstyle='steps-mid')
 plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,50)
 #plt.ylim(-200,200)
 axesgroup2=(ax21,ax22)
-#multi2 = MultiCursor(f1.canvas, axesgroup2, color='r', lw=2,
-#                    horizOn=False, vertOn=True, useblit=False)
 
 ax31=plt.subplot2grid( (4,4), (2,0),colspan=2)
 data,yl,xl=hAmBe.get_plotlabels()
@@ -184,15 +182,14 @@ plt.xlabel("channel")
 plt.xlim(50,150)
 plt.ylim(0,2000)
 ax32=plt.subplot2grid( (4,4), (3,0),colspan=2)
-diffdata=data[1:]-data[0:-1]
+diffdata=np.zeros(len(data))
+diffdata[1:-1]=(data[2:]-data[0:-2])/2
 plt.plot(diffdata,drawstyle='steps-mid')
 plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(50,150)
 plt.ylim(-200,200)
 axesgroup3=[ax31,ax32]
-#multi3 = MultiCursor(f1.canvas, axesgroup3, color='r', lw=2,
-#                    horizOn=False, vertOn=True, useblit=False)
 
 ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
 plt.xlabel('Energy [MeV]')

@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import MultiCursor
 from scipy.stats import linregress
 
-
 """
 Calibrate neutron detector using gamma ray sources.
 
@@ -50,29 +49,22 @@ GCs=ECs.eventstream()
 GAmBe=EAmBe.eventstream()
 GTAC=ETAC.eventstream()
 
-# define histograms; use fake adc4 to avoid problem in currently buggy eventlist.py
-htmp=Histogram(ENa, ADC4, 'ADC4', 512, label="22Na")
-
 hNa=Histogram(ENa, ADC1+ADC2+ADC3, 'ADC1', 512, label="22Na")
 hCs=Histogram(ECs, ADC1+ADC2+ADC3, 'ADC1', 512, label="137Cs")
 hAmBe=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC1', 512, label='AmBe')
 hTAC=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
 
 # sort data. eventually must make multistream sorter!
-SNa=Sorter(ENa, [hNa,htmp] )
+SNa=Sorter(ENa, [hNa] )
 sortadc=SNa.sort()
 
-htmp=Histogram(ECs, ADC4, 'ADC4', 512, label="22Na")
-
-SCs=Sorter(ECs, [hCs,htmp] )
+SCs=Sorter(ECs, [hCs] )
 sortadc=SCs.sort()
 
-htmp=Histogram(EAmBe, ADC4, 'ADC4', 512, label="22Na")
-
-SAmBe=Sorter(EAmBe, [hAmBe,htmp] )
+SAmBe=Sorter(EAmBe, [hAmBe] )
 sortadc=SAmBe.sort()
 
-STAC=Sorter(ETAC, [hTAC,htmp] )
+STAC=Sorter(ETAC, [hTAC] )
 sortadc=STAC.sort()
 
 # calibration data
@@ -119,7 +111,7 @@ def pos_callback(event):
         ax4.plot(xt,intercept+xt*slope)
         plt.draw()
 
-    print(event.xdata)
+    #print(event.xdata)
 
 def fig_callback(event):
     """
@@ -220,27 +212,31 @@ N=len(data)
 # scan through data and get mean peak positions in a fairly crude search
 x=np.arange(N)
 i=2
-print(N)
-while i<N-5:
-    if data[i]<2 and data[i+4]<2:
-        s=np.sum(data[i:i+5]*x[i:i+5])
-        if s>5:
-            print(i,s,data[i])
-            s=s/np.sum(data[i:i+5])
+#print(N)
+while i<N-6:
+    if data[i]==0 and data[i+5]==0:
+        s=np.sum(data[i:i+6]*x[i:i+6])
+        if s>10:
+            #print(i,s,data[i])
+            #print(data[i:i+6])
+            s=s/np.sum(data[i:i+6])
             peakpos.append(s)
             i=i+5
         else:
             i=i+1
     else:
         i=i+1
+#print(i)
 
 #calculate tac calibration in channels/ns
+#print(peakpos)
 peakpos=np.array(peakpos)
 N=len(peakpos)//2
 taccalstep=20.0 #ns
 diff=0.0
 # from peakpos, avoid 'method of fools'
 for i in range(N):
+    #print(peakpos[i+N]-peakpos[i])
     diff+=(peakpos[i+N]-peakpos[i])/N**2
 print('mean peak spacing in TAC spectrum=', diff)
 print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)")
@@ -252,6 +248,8 @@ plt.subplot(211)
 plt.plot(data,drawstyle='steps-mid')
 plt.ylabel(yl)
 plt.xlabel("channel")
+for x in peakpos:
+    plt.axvline(x,color='r',alpha=0.4)
 plt.subplot(212)
 plt.plot(peakpos,'bo')
 plt.plot(np.arange(len(peakpos)),np.arange(len(peakpos))*tacslope+tacintercept)

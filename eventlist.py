@@ -1,11 +1,5 @@
-# for mac
-import matplotlib
-matplotlib.use("Qt5Agg")
-
-
 import numpy as np
 import io
-import matplotlib.pyplot as plt
 import configparser
 from enum import IntEnum
 
@@ -406,6 +400,13 @@ class Sorter(object):
         
 
 if __name__ == "__main__":
+
+    # for mac
+    import platform
+    if platform.system()=="Darwin":
+        import matplotlib
+        matplotlib.use("Qt5Agg")
+
 
     import numpy as np
     import matplotlib.pyplot as plt

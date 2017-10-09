@@ -1,6 +1,8 @@
 # for mac
-import matplotlib
-matplotlib.use("Qt5Agg")
+#import platform
+#if platform.system()=="Darwin":
+    #import matplotlib
+    #matplotlib.use("Qt5Agg")
 
 from eventlist import *
 

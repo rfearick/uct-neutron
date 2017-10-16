@@ -34,7 +34,9 @@ Two types of files are important:
 1. Assemble analysis runs. Gather all files needed, i.e.
 
    a. Calibration data. lst files for 22na, 137Cs, AmBe, TAC.
+   
    b. Data runs. lst and mpa files for NE213, FC, 0deg, 16deg, etc.
+   
    c. Note that the lst file contains scalar data at start of run;
       mpa file contains scalar data at end of run.
 

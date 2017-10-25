@@ -30,12 +30,25 @@ import time
 
 count=0
 
-def InsertPlot(model, h, name):
-    plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
-    model.appendRow(plot)
-    plot.setData(h)
+class SpectrumPlot(Qt.QObject):
+    def __init__( self, parent, h, name, xname, yname  ):
+        super().__init__(parent=parent)
+        self.parent=parent
+        self.plotmodel=parent.plotmodel
+        self.histo=h
+        self.name=name
+        self.xname=xname
+        self.yname=yname
+        print("plot object created")
+        
+
+    def InsertPlot(self, name):
+        plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
+        self.plotmodel.appendRow(plot)
+        plot.setData(self)
+
    
-def SetupSort(model):
+def SetupSort(parent):
     infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
     #infile="../NE213 100 MeV data/NE213_019_137Cs.lst"
     #infile="../NE213 100 MeV data/NE213_017_22Na.lst"
@@ -52,11 +65,19 @@ def SetupSort(model):
     histlist=[h1,h2,h3,h4,h21]
     S=Sorter( E, histlist)
 
-    InsertPlot(model, h1, "adc 1")
-    InsertPlot(model, h2, "ADC 2")
-    InsertPlot(model, h3, "Adc 3")
-    InsertPlot(model, h4, "Adc 4")
-    InsertPlot(model, h21, "2d")
+    s1=SpectrumPlot( parent, h1, "adc 1", "channel", "counts per channel")
+    s2=SpectrumPlot( parent, h2, "ADC 2", "channel", "counts per channel")
+    s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
+    s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
+    s21=SpectrumPlot( parent, h21, "adc 4", "Short", "Long")
+
+    model=parent.plotmodel
+
+    s1.InsertPlot("adc 1")
+    s2.InsertPlot("ADC 2")
+    s3.InsertPlot("Adc 3")
+    s4.InsertPlot("Adc 4")
+    s21.InsertPlot("2d")
 
     return S
 
@@ -213,7 +234,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         plotdock.setWidget(self.listview)
 
         # setup sort in background
-        S=SetupSort(self.plotmodel)
+        S=SetupSort(self)
         self.bthread=Qt.QThread()
         bobj=BackgroundSort(S)
         bobj.moveToThread(self.bthread)
@@ -263,7 +284,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     def doubleclickPlot(self,p):
         plot=self.plotmodel.itemFromIndex(p)
-        h=plot.data()
+        s=plot.data()
+        h=s.histo
         #print(p,plot,h)
         nfig=p.row()+1
         plt.figure(nfig)

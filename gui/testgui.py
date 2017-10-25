@@ -18,12 +18,13 @@ ADC3=EventFlags.ADC3
 ADC4=EventFlags.ADC4
 
 from PyQt5 import Qt, QtCore, QtWidgets, QtGui
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 import numpy as np
 import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
+plt.ion()
 
 import icons    # part of this package -- toolbar icons
 import time
@@ -33,15 +34,21 @@ count=0
 class SpectrumPlot(Qt.QObject):
     def __init__( self, parent, h, name, xname, yname  ):
         super().__init__(parent=parent)
-        self.parent=parent
+        #print('parentage',self.parent(),parent)
+        #self.parent=parent
         self.plotmodel=parent.plotmodel
         self.histo=h
         self.name=name
         self.xname=xname
         self.yname=yname
+        self.fig=None
         print("plot object created")
         parent.listview.doubleClicked.connect(self.doubleclickPlot)
-        
+        self.timer=Qt.QTimer()
+        self.timer.setInterval(2000)
+        self.timer.timeout.connect(self.update)
+        parent.bthread.finished.connect(self.stop_update)
+       
     def insertPlot(self, name):
         plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
         self.plotmodel.appendRow(plot)
@@ -54,7 +61,17 @@ class SpectrumPlot(Qt.QObject):
         h=self.histo
         print(p,plot,h)
         nfig=p.row()+1
-        plt.figure(nfig)
+        fig=plt.figure(nfig)
+        print(plt.get_fignums())
+        self.drawPlot(h)
+        print(nfig, h.dims)
+        fig.canvas.draw_idle()
+        if self.fig is None:
+            self.fig=nfig
+            fig.canvas.manager.window.closing.connect(self.closed)
+            self.timer.start()
+
+    def drawPlot(self,h):
         if h.dims==1:
             data,yl,xl=h.get_plotdata()
             plt.plot(data,drawstyle='steps-mid')
@@ -64,8 +81,25 @@ class SpectrumPlot(Qt.QObject):
             plt.imshow(data,origin='lower',vmax=2000)
             plt.xlabel(yl)
             plt.ylabel(xl)
-        print(nfig, h.dims)
-        plt.show()
+    
+    @pyqtSlot()
+    def update(self):
+        nfig=self.fig
+        fig=plt.figure(nfig)
+        fig.clf()
+        self.drawPlot(self.histo)
+
+    @pyqtSlot()
+    def stop_update(self):
+        print('fig',self.fig, ' end update')
+        self.timer.stop()
+
+    @pyqtSlot()
+    def closed(self):
+        self.timer.stop()
+        print(plt.get_fignums())
+        print("Window closed")
+        print('thread',self.parent().bthread.isRunning())
         
 def SetupSort(parent):
     """
@@ -144,6 +178,7 @@ class BackgroundSort(Qt.QObject):
     """
     Run sort in a background thread
     """
+    finished=pyqtSignal()
     def __init__(self, sorter):
         super().__init__()
         self.sorter = sorter
@@ -151,6 +186,9 @@ class BackgroundSort(Qt.QObject):
     def task(self):
         print("start sort")
         sortadc=self.sorter.sort()
+        print("end sort")
+        self.finished.emit()
+        
         # sort returns histogram data of adc distribution -- do something with it
         
 
@@ -162,7 +200,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     """
     def __init__(self, *args):
         Qt.QMainWindow.__init__(self, *args)
-   
+
         self.freezeState = 0
         self.changeState = 0
         self.averageState = 0
@@ -260,11 +298,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         plotdock.setWidget(self.listview)
 
         # setup sort in background
-        S=SetupSort(self)
         self.bthread=Qt.QThread()
+        S=SetupSort(self)
         bobj=BackgroundSort(S)
         bobj.moveToThread(self.bthread)
         self.bthread.started.connect(bobj.task)
+        bobj.finished.connect(self.cleanupThread)
                                    
         # setup timer for plot updates
         self.timer=Qt.QTimer()
@@ -278,6 +317,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
         self.btnFreeze.clicked.connect(self.filer)
         #self.listview.doubleClicked.connect(self.doubleclickPlot)
+
+    @pyqtSlot()
+    def cleanupThread(self):
+        print("cleanup")
+        self.bthread.quit()
 
     def increment(self):
         global count
@@ -309,6 +353,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def printPlot(self):
         p = QPrinter()
 
+    @pyqtSlot()
     def doubleclickPlot(self,p):
         plot=self.plotmodel.itemFromIndex(p)
         s=plot.data()

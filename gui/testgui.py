@@ -41,14 +41,17 @@ class SpectrumPlot(Qt.QObject):
         self.yname=yname
         print("plot object created")
         
-
-    def InsertPlot(self, name):
+    def insertPlot(self, name):
         plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
         self.plotmodel.appendRow(plot)
         plot.setData(self)
-
    
 def SetupSort(parent):
+    """
+    Setup a sort of data
+    This is hardwired here.
+    At some point this will change; there should be some sort builder program.
+    """
     infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
     #infile="../NE213 100 MeV data/NE213_019_137Cs.lst"
     #infile="../NE213 100 MeV data/NE213_017_22Na.lst"
@@ -73,11 +76,11 @@ def SetupSort(parent):
 
     model=parent.plotmodel
 
-    s1.InsertPlot("adc 1")
-    s2.InsertPlot("ADC 2")
-    s3.InsertPlot("Adc 3")
-    s4.InsertPlot("Adc 4")
-    s21.InsertPlot("2d")
+    s1.insertPlot("adc 1")
+    s2.insertPlot("ADC 2")
+    s3.insertPlot("Adc 3")
+    s4.insertPlot("Adc 4")
+    s21.insertPlot("2d")
 
     return S
 
@@ -117,11 +120,12 @@ def SetupSort(parent):
     """
 
 class BackgroundSort(Qt.QObject):
-
+    """
+    Run sort in a background thread
+    """
     def __init__(self, sorter):
         super().__init__()
         self.sorter = sorter
-    
 
     def task(self):
         sortadc=self.sorter.sort()

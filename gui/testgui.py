@@ -40,12 +40,33 @@ class SpectrumPlot(Qt.QObject):
         self.xname=xname
         self.yname=yname
         print("plot object created")
+        parent.listview.doubleClicked.connect(self.doubleclickPlot)
         
     def insertPlot(self, name):
         plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
         self.plotmodel.appendRow(plot)
         plot.setData(self)
    
+    def doubleclickPlot(self,p):
+        plot=self.plotmodel.itemFromIndex(p)
+        s=plot.data()
+        if s != self: return
+        h=self.histo
+        print(p,plot,h)
+        nfig=p.row()+1
+        plt.figure(nfig)
+        if h.dims==1:
+            data,yl,xl=h.get_plotdata()
+            plt.plot(data,drawstyle='steps-mid')
+            plt.ylabel(yl)
+        else:
+            data,yl,xl=h.get_plotlabels()
+            plt.imshow(data,origin='lower',vmax=2000)
+            plt.xlabel(yl)
+            plt.ylabel(xl)
+        print(nfig, h.dims)
+        plt.show()
+        
 def SetupSort(parent):
     """
     Setup a sort of data
@@ -128,6 +149,7 @@ class BackgroundSort(Qt.QObject):
         self.sorter = sorter
 
     def task(self):
+        print("start sort")
         sortadc=self.sorter.sort()
         # sort returns histogram data of adc distribution -- do something with it
         
@@ -251,10 +273,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
         # start sort
         self.bthread.start()
+        print('thread',self.bthread.isRunning())
         ###self.timer.start()
 
         self.btnFreeze.clicked.connect(self.filer)
-        self.listview.doubleClicked.connect(self.doubleclickPlot)
+        #self.listview.doubleClicked.connect(self.doubleclickPlot)
 
     def increment(self):
         global count
@@ -290,7 +313,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         plot=self.plotmodel.itemFromIndex(p)
         s=plot.data()
         h=s.histo
-        #print(p,plot,h)
+        print(p,plot,h)
         nfig=p.row()+1
         plt.figure(nfig)
         if h.dims==1:

@@ -24,7 +24,7 @@ import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-plt.ion()
+plt.ion()       # turn on interactive mode of matplotlib
 
 import icons    # part of this package -- toolbar icons
 import time
@@ -32,6 +32,14 @@ import time
 count=0
 
 class SpectrumPlot(Qt.QObject):
+    """
+    define a spectrum plot
+    parent:    main window; defines the plot model we use
+    h     :    histogram to plot
+    name  :    name given to histogram
+    xname :    label for x axis
+    yname :    label for y axis
+    """
     def __init__( self, parent, h, name, xname, yname  ):
         super().__init__(parent=parent)
         #print('parentage',self.parent(),parent)
@@ -75,12 +83,13 @@ class SpectrumPlot(Qt.QObject):
         if h.dims==1:
             data,yl,xl=h.get_plotdata()
             plt.plot(data,drawstyle='steps-mid')
-            plt.ylabel(yl)
+            plt.ylabel(yl+' '+self.yname)
+            plt.xlabel(self.xname)
         else:
             data,yl,xl=h.get_plotlabels()
             plt.imshow(data,origin='lower',vmax=2000)
-            plt.xlabel(yl)
-            plt.ylabel(xl)
+            plt.xlabel(yl+' '+self.xname)
+            plt.ylabel(xl+' '+self.yname)
     
     @pyqtSlot()
     def update(self):
@@ -127,7 +136,7 @@ def SetupSort(parent):
     s2=SpectrumPlot( parent, h2, "ADC 2", "channel", "counts per channel")
     s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
     s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
-    s21=SpectrumPlot( parent, h21, "adc 4", "Short", "Long")
+    s21=SpectrumPlot( parent, h21, "adc 4", "Long", "Short")
 
     model=parent.plotmodel
 

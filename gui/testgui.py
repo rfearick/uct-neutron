@@ -42,8 +42,6 @@ class SpectrumPlot(Qt.QObject):
     """
     def __init__( self, parent, h, name, xname, yname  ):
         super().__init__(parent=parent)
-        #print('parentage',self.parent(),parent)
-        #self.parent=parent
         self.plotmodel=parent.plotmodel
         self.histo=h
         self.name=name
@@ -58,21 +56,26 @@ class SpectrumPlot(Qt.QObject):
         parent.bthread.finished.connect(self.stop_update)
        
     def insertPlot(self, name):
+        """
+        insert plot repr into list view widget
+        """
         plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
         self.plotmodel.appendRow(plot)
         plot.setData(self)
    
     def doubleclickPlot(self,p):
+        """
+        handle double click sygnal from listview
+        plot corresponding data
+        """
         plot=self.plotmodel.itemFromIndex(p)
         s=plot.data()
         if s != self: return
         h=self.histo
-        print(p,plot,h)
         nfig=p.row()+1
         fig=plt.figure(nfig)
-        print(plt.get_fignums())
+        print(plt.get_fignums(),nfig, h.dims)
         self.drawPlot(h)
-        print(nfig, h.dims)
         fig.canvas.draw_idle()
         if self.fig is None:
             self.fig=nfig
@@ -80,6 +83,9 @@ class SpectrumPlot(Qt.QObject):
             self.timer.start()
 
     def drawPlot(self,h):
+        """
+        draw the plot on matplotlib canvas
+        """
         if h.dims==1:
             data,yl,xl=h.get_plotdata()
             plt.plot(data,drawstyle='steps-mid')
@@ -93,6 +99,9 @@ class SpectrumPlot(Qt.QObject):
     
     @pyqtSlot()
     def update(self):
+        """
+        update the plot if timer is active (i.e. sorting active)
+        """
         nfig=self.fig
         fig=plt.figure(nfig)
         fig.clf()
@@ -100,15 +109,20 @@ class SpectrumPlot(Qt.QObject):
 
     @pyqtSlot()
     def stop_update(self):
+        """
+        cease updating plot when sorting done
+        """
         print('fig',self.fig, ' end update')
         self.timer.stop()
 
     @pyqtSlot()
     def closed(self):
+        """
+        stop timer when window closed
+        """
         self.timer.stop()
-        print(plt.get_fignums())
-        print("Window closed")
-        print('thread',self.parent().bthread.isRunning())
+        print('figs ',plt.get_fignums())
+        print("Window closed ",'thread',self.parent().bthread.isRunning())
         
 def SetupSort(parent):
     """
@@ -153,34 +167,6 @@ def SetupSort(parent):
     sortadc=[]
     deadtimer=[]
     t0=time.perf_counter()
-    # this section 100 s (macmini)
-    # a few optimisations, now 96 s (macmini)
-    sortadc=S.sort()
-    plt.figure(1)
-    data,yl,xl=h21.get_plotlabels()
-    plt.imshow(data,origin='lower',vmax=2000)
-    plt.xlabel(yl)
-    plt.ylabel(xl)
-    plt.figure(2)
-    data,yl,xl=h2.get_plotdata()
-    plt.plot(data,drawstyle='steps-mid')
-    plt.ylabel(yl)
-    plt.figure(3)
-    plt.hist(sortadc,bins=16,range=(0,15))
-    plt.xlim(0,16)
-    plt.ylabel('Adc distribution')
-    plt.figure(4)
-    data,yl,xl=h4.get_plotdata()
-    plt.plot(data,drawstyle='steps-mid')
-    plt.ylabel(yl)
-    plt.figure(5)
-    data,yl,xl=h3.get_plotdata()
-    plt.plot(data,drawstyle='steps-mid')
-    plt.ylabel(yl)
-    plt.figure(6)
-    data,yl,xl=h1.get_plotdata()
-    plt.plot(data,drawstyle='steps-mid')
-    plt.ylabel(yl)
     """
 
 class BackgroundSort(Qt.QObject):
@@ -193,6 +179,9 @@ class BackgroundSort(Qt.QObject):
         self.sorter = sorter
 
     def task(self):
+        """
+        start the sort task; emit signal when done to release background thread
+        """
         print("start sort")
         sortadc=self.sorter.sort()
         print("end sort")
@@ -309,12 +298,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # setup timer for plot updates
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
-        ###self.timer.timeout.connect(self.increment)
-
-        ###self.timer.start()
 
         self.btnFreeze.clicked.connect(self.filer)
-        #self.listview.doubleClicked.connect(self.doubleclickPlot)
 
     def startSorting(self):
         """
@@ -333,62 +318,23 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # start sort
         self.bthread.start()
         print('thread',self.bthread.isRunning())
-        
 
     @pyqtSlot()
     def cleanupThread(self):
+        """
+        quit background thread when sorting done
+        """
         print("cleanup")
         self.bthread.quit()
 
-    def increment(self):
-        global count
-        s="%d"%(count,)
-        print(s)
-        self.donelist.addItems([s])
-
     def filer(self):
+        # placeholder...
         print("enter filer")
         dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
         print(dlg)
         
-    """
-    def mode(self, on):
-        if on:
-            self.changeState=1
-            self.btnMode.setText("scope")
-            self.btnMode.setIcon(Qt.QIcon(Qt.QPixmap(icons.scope)))
-        else:
-            self.changeState=0
-            self.btnMode.setText("fft")
-            self.btnMode.setIcon(Qt.QIcon(Qt.QPixmap(icons.pwspec)))
-        if self.changeState==1:
-            self.stack.setCurrentIndex(self.changeState)
-        else:
-            self.stack.setCurrentIndex(self.changeState)
-    """
-    
     def printPlot(self):
         p = QPrinter()
-
-    @pyqtSlot()
-    def doubleclickPlot(self,p):
-        plot=self.plotmodel.itemFromIndex(p)
-        s=plot.data()
-        h=s.histo
-        print(p,plot,h)
-        nfig=p.row()+1
-        plt.figure(nfig)
-        if h.dims==1:
-            data,yl,xl=h.get_plotdata()
-            plt.plot(data,drawstyle='steps-mid')
-            plt.ylabel(yl)
-        else:
-            data,yl,xl=h.get_plotlabels()
-            plt.imshow(data,origin='lower',vmax=2000)
-            plt.xlabel(yl)
-            plt.ylabel(xl)
-        #print(nfig, h.dims)
-        plt.show()
 
 # Admire! 
 app = Qt.QApplication(sys.argv)

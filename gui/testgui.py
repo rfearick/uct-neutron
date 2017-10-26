@@ -296,7 +296,22 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.listview.setModel(self.plotmodel)
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         plotdock.setWidget(self.listview)
+                                  
+        # setup timer for plot updates
+        self.timer=Qt.QTimer()
+        self.timer.setInterval(2000)
+        ###self.timer.timeout.connect(self.increment)
 
+        ###self.timer.start()
+
+        self.btnFreeze.clicked.connect(self.filer)
+        #self.listview.doubleClicked.connect(self.doubleclickPlot)
+
+    def startSorting(self):
+        """
+        start a sort process
+        this will evolve to dispatch different sorts at various times
+        """
         # setup sort in background
         self.bthread=Qt.QThread()
         S=SetupSort(self)
@@ -304,19 +319,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         bobj.moveToThread(self.bthread)
         self.bthread.started.connect(bobj.task)
         bobj.finished.connect(self.cleanupThread)
-                                   
-        # setup timer for plot updates
-        self.timer=Qt.QTimer()
-        self.timer.setInterval(2000)
-        self.timer.timeout.connect(self.increment)
-
+        self.bobj=bobj # keep reference
+        
         # start sort
         self.bthread.start()
         print('thread',self.bthread.isRunning())
-        ###self.timer.start()
-
-        self.btnFreeze.clicked.connect(self.filer)
-        #self.listview.doubleClicked.connect(self.doubleclickPlot)
+        
 
     @pyqtSlot()
     def cleanupThread(self):
@@ -377,4 +385,5 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 app = Qt.QApplication(sys.argv)
 demo=NeutronAnalysisDemo()
 demo.show()
+demo.startSorting()
 sys.exit(app.exec_())

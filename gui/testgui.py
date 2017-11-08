@@ -24,12 +24,16 @@ import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
+from matplotlib.widgets import LassoSelector
 plt.ion()       # turn on interactive mode of matplotlib
 
 import icons    # part of this package -- toolbar icons
 import time
 
 count=0
+
+def onselect(verts):
+    print(verts)
 
 class SpectrumPlot(Qt.QObject):
     """
@@ -65,9 +69,10 @@ class SpectrumPlot(Qt.QObject):
    
     def doubleclickPlot(self,p):
         """
-        handle double click sygnal from listview
+        handle double click signal from listview
         plot corresponding data
         """
+        from polygonlasso import MyLassoSelector
         plot=self.plotmodel.itemFromIndex(p)
         s=plot.data()
         if s != self: return
@@ -78,6 +83,10 @@ class SpectrumPlot(Qt.QObject):
         self.drawPlot(h)
         fig.canvas.draw_idle()
         if self.fig is None:
+            if h.dims==2:
+                ax=fig.gca()
+                self.lasso=MyLassoSelector(ax,onselect,useblit=False)
+                print("lasso")
             self.fig=nfig
             fig.canvas.manager.window.closing.connect(self.closed)
             self.timer.start()
@@ -104,7 +113,7 @@ class SpectrumPlot(Qt.QObject):
         """
         nfig=self.fig
         fig=plt.figure(nfig)
-        fig.clf()
+        #plt.cla()
         self.drawPlot(self.histo)
 
     @pyqtSlot()

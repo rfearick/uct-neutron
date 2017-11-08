@@ -1,7 +1,17 @@
-            
+# Banana gate region selector for 2-d spectra.
+# Subclassed from existing matplotlib widget
+#
+# Problems trying to run in pyqt5 gui:
+#   1) Very slow with background sort in action
+#   2) Interaction with clearing of fig/axes prior to plot update needs to be sorted.
+#      For instance: clf() kills widget off
+#                    cla() no feedback lines plotted (presumably cleared ...)
+#   Works if used after sorting is done ...
+
+
 #import copy
 from matplotlib.lines import Line2D
-from matplotlib.widgets import LassoSelector#, _SelectorWidget
+from matplotlib.widgets import LassoSelector, _SelectorWidget
 
         
 class MyLassoSelector(LassoSelector):
@@ -48,7 +58,7 @@ class MyLassoSelector(LassoSelector):
     """
 
     def __init__(self, ax, onselect=None, useblit=True, lineprops=None, button=[1,3]):
-        LassoSelector.__init__(self, ax, onselect, useblit=useblit, lineprops=lineprops, button=button)
+        _SelectorWidget.__init__(self, ax, onselect, useblit=useblit, button=button)
         
         if lineprops is None:
             lineprops = dict()
@@ -56,6 +66,7 @@ class MyLassoSelector(LassoSelector):
             lineprops['animated'] = True
         self.feedback = Line2D([], [], **lineprops)
         self.feedback.set_visible(False)
+        self.line = Line2D([], [], **lineprops)
         self.ax.add_line(self.line)
         self.ax.add_line(self.feedback)
         self.artists = [self.line,self.feedback]
@@ -64,7 +75,7 @@ class MyLassoSelector(LassoSelector):
         self.verts=None
 
     def _press(self, event):
-        #print("_press",event.button, self.startfeed)
+        print("_press",event.button, self.startfeed)
         if event.button == 1 and self.verts is None:
             self.verts = []
             self.line.set_data([[], []])
@@ -89,18 +100,23 @@ class MyLassoSelector(LassoSelector):
                 #self.line.set_visible(False)
                 #self.verts = None
 
-    def onmove(self, event):
+    def _onmove(self, event):
         """Cursor move event handler and validator"""
         #if not self.ignore(event) and self.startfeed is not None:
         #print("m", self.get_active())
         if self.startfeed is not None:
             print("onmove",self.ignore(event))
             event = self._clean_event(event)
-            self._onmove(event)
+            # --
+            feedbackline=[self.startfeed,self._get_data(event)]
+            print("feedback",feedbackline)
+            self.feedback.set_data(list(zip(*feedbackline)))
+            self.update()
+            #self._onmove2(event)
             return True
         return False
 
-    def _onmove(self, event):
+    def _onmove2(self, event):
         if self.startfeed is not None:
             feedbackline=[self.startfeed,self._get_data(event)]
             print("feedback",feedbackline)
@@ -119,12 +135,6 @@ class MyLassoSelector(LassoSelector):
             self.onselect(self.verts)
             self.verts=None
             self.startfeed=None
-
-    def get_verts(self):
-        """
-        return list of vertices
-        """
-        return self.verts
 
 
 

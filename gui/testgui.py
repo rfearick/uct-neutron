@@ -113,7 +113,7 @@ class SpectrumPlot(Qt.QObject):
         """
         nfig=self.fig
         fig=plt.figure(nfig)
-        #plt.cla()
+        plt.cla()
         self.drawPlot(self.histo)
 
     @pyqtSlot()
@@ -199,6 +199,9 @@ class BackgroundSort(Qt.QObject):
         # sort returns histogram data of adc distribution -- do something with it
         
 
+# initial analysis tasks
+analysis_tasks=["Calibrate","Sort"]
+
 class NeutronAnalysisDemo(Qt.QMainWindow):
     """
     Application container  widget
@@ -222,11 +225,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.stack.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
 
         self.tasklist=Qt.QListWidget(self.stack)
-        self.tasklist.addItems(["Calibrate","Sort"])
+        self.tasklist.addItems(analysis_tasks)
         self.tasklist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         self.stack.setWidget(self.tasklist)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.stack)
-
+        
         self.dock=Qt.QDockWidget("Done",self)
         self.donelist=Qt.QListWidget(self.dock)
         self.donelist.addItems(["Done","Also"])
@@ -296,19 +299,20 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
         # set up a model for spectra plots
         self.plotmodel=Qt.QStandardItemModel(self)
-        plotdock=Qt.QDockWidget("Plots",self)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, plotdock)
+        self.plotdock=Qt.QDockWidget("Plots",self)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
         self.listview=Qt.QListView(self)
         self.listview.setViewMode(Qt.QListView.IconMode)
         self.listview.setModel(self.plotmodel)
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        plotdock.setWidget(self.listview)
+        self.plotdock.setWidget(self.listview)
                                   
         # setup timer for plot updates
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
 
-        self.btnFreeze.clicked.connect(self.filer)
+        self.tasklist.doubleClicked.connect(self.filer)
+        #self.btnFreeze.clicked.connect(self.filer)
 
     def startSorting(self):
         """
@@ -336,11 +340,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         print("cleanup")
         self.bthread.quit()
 
-    def filer(self):
+    def filer(self,p):
         # placeholder...
-        print("enter filer")
-        dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
-        print(dlg)
+        m=self.tasklist.itemFromIndex(p)
+        print("enter filer",m.text())
+        #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
+        #print(dlg)
         
     def printPlot(self):
         p = QPrinter()

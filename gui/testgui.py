@@ -3,6 +3,12 @@
 # working multithread pyqt5 code
 # taken from develop/testbed3.py
 
+"""
+TODO
+SpectrumPlot -- too many names
+SpectrumPlot -- handle start of sort/interaction with update timer
+"""
+
 import sys
 sys.path.append("..") # for eventlist.py
 from eventlist import Histogram, Sorter, EventSource
@@ -59,11 +65,11 @@ class SpectrumPlot(Qt.QObject):
         self.timer.timeout.connect(self.update)
         parent.bthread.finished.connect(self.stop_update)
        
-    def insertPlot(self, name):
+    def insertPlot(self):
         """
         insert plot repr into list view widget
         """
-        plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
+        plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),self.name)
         self.plotmodel.appendRow(plot)
         plot.setData(self)
    
@@ -159,15 +165,15 @@ def SetupSort(parent):
     s2=SpectrumPlot( parent, h2, "ADC 2", "channel", "counts per channel")
     s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
     s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
-    s21=SpectrumPlot( parent, h21, "adc 4", "Long", "Short")
+    s21=SpectrumPlot( parent, h21, "adc1 v adc2", "Long", "Short")
 
     model=parent.plotmodel
 
-    s1.insertPlot("adc 1")
-    s2.insertPlot("ADC 2")
-    s3.insertPlot("Adc 3")
-    s4.insertPlot("Adc 4")
-    s21.insertPlot("2d")
+    s1.insertPlot()
+    s2.insertPlot()
+    s3.insertPlot()
+    s4.insertPlot()
+    s21.insertPlot()
 
     return S
 

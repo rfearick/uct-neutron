@@ -364,7 +364,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         import calibrate as C
         self.calib=C.Calibrator(C.infileNa,C.infileCs,C.infileAmBe,C.infileTAC)
         self.calib.sort()
-        self.calib.plot_all_spectra()
+        self.calplot=C.CalibrationPlotter(self.calib)
+        self.calplot.plot_all_spectra()
         #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
         #print(dlg)
         

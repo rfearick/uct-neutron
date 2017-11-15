@@ -70,6 +70,11 @@ class Calibrator(object):
         self.infileCs = infileCs
         self.infileAmBe = infileAmBe
         self.infileTAC = infileTAC
+        self.hNa = None
+        self.hCs = None
+        self.hAmBe = None
+        self.hTAC = None
+        self.calibration=(None,None)
 
     def sort( self ):
 
@@ -108,67 +113,7 @@ class Calibrator(object):
         self.hAmBe = hAmBe
         self.hTAC = hTAC
 
-    # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
-    # calibrations.
-    def plot_calib_spectrum( self, axgroup, hist, calib, xlimits, ylimits):
-        """
-        Plot a calibration spectrum of hist in axes of axgroup
-        axgroup: pair of axes in tuple
-        hist:    histogram containing spectrum
-        calib:   calibration tuple (slope, intercept); may be (None,None)
-        """
-        ax1,ax2=axgroup
-        data,yl,xl=hist.get_plotlabels()
-        slope,intercept=calib
-        iscalib=slope!=None and intercept!=None
-        isylimit=ylimits[0]!=None and ylimits[1]!=None
-        e=np.arange(hist.size1)
-        label="channel"
-        if iscalib:
-            e=(e-intercept)/slope
-            label="Energy (MeVee)"
-            xlimits=((xlimits[0]-intercept)/slope,(xlimits[1]-intercept)/slope)
-        ax1.plot(e,data,drawstyle='steps-mid')
-        ax1.set_ylabel(yl)
-        ax1.set_xlabel(label)
-        ax1.set_xlim(*xlimits)
-        if isylimit: ax1.set_ylim(*ylimits)
-        diffdata=np.zeros(len(data))
-        diffdata[1:-1]=(data[2:]-data[0:-2])/2
-        ax2.plot(e,diffdata,drawstyle='steps-mid')
-        ax2.set_ylabel(yl)
-        ax2.set_xlabel(label)
-        ax2.set_xlim(*xlimits)
-
-    def plot_all_spectra( self ):
-        self.f1=plt.figure(1,(8,8))
-        ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
-        ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
-        self.axesgroup1=(ax11,ax12)
-        self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
-
-        ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
-        ax22=plt.subplot2grid( (4,4), (1,2),colspan=2)
-        self.axesgroup2=(ax21,ax22)
-        self.plot_calib_spectrum( self.axesgroup2, self.hCs, calibration, (0,50), (None,None))
-
-        ax31=plt.subplot2grid( (4,4), (2,0),colspan=2)
-        ax32=plt.subplot2grid( (4,4), (3,0),colspan=2)
-        self.axesgroup3=(ax31,ax32)
-        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
-
-        self.ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
-        plt.xlabel('Energy [MeV]')
-        plt.ylabel('Channel')
-        plt.tight_layout()
-
-
-        self.cid_click=self.f1.canvas.mpl_connect('button_press_event',self.pos_callback)
-        self.cid_enter=self.f1.canvas.mpl_connect('axes_enter_event',self.fig_callback)
-
-
-        f2=plt.figure(2)
-        data,yl,xl=self.hTAC.get_plotlabels()
+    def calibrateTAC(self,data):
 
         peakpos=[]
         N=len(data)
@@ -207,17 +152,131 @@ class Calibrator(object):
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
         print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
+        return tacslope,tacintercept,peakpos
 
+    def calibrateGamma(self,edges,chans):
+        slope, intercept,r,p,stderr=linregress(edges,chans)
+        calibration=(slope,intercept)
+        self.calibration=calibration
+        print("L calibration: slope,intercept",slope*2, " ch/MeV", intercept*2, " ch")
+        print("Calibration corrected to full event size (1024)")
+        return slope, intercept
+
+
+class CalibrationPlotter(object):
+    """
+    Plot the calibration spectra defined by Calibrator 
+    """
+    def __init__(self, calibrator):
+        self.calibrator=calibrator
+        # copy these for convenience
+        self.hNa = calibrator.hNa
+        self.hCs = calibrator.hCs
+        self.hAmBe = calibrator.hAmBe
+        self.hTAC = calibrator.hTAC
+
+        
+    # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
+    # calibrations.
+    def plot_calib_spectrum( self, axgroup, hist, calib, xlimits, ylimits):
+        """
+        Plot a calibration spectrum of hist in axes of axgroup
+        axgroup: pair of axes in tuple
+        hist:    histogram containing spectrum
+        calib:   calibration tuple (slope, intercept); may be (None,None)
+        """
+        ax1,ax2=axgroup
+        data,yl,xl=hist.get_plotlabels()
+        slope,intercept=calib
+        iscalib=slope!=None and intercept!=None
+        isylimit=ylimits[0]!=None and ylimits[1]!=None
+        e=np.arange(hist.size1)
+        label="channel"
+        if iscalib:
+            e=(e-intercept)/slope
+            label="Energy (MeVee)"
+            xlimits=((xlimits[0]-intercept)/slope,(xlimits[1]-intercept)/slope)
+        ax1.plot(e,data,drawstyle='steps-mid')
+        ax1.set_ylabel(yl)
+        ax1.set_xlabel(label)
+        ax1.set_xlim(*xlimits)
+        if isylimit: ax1.set_ylim(*ylimits)
+        diffdata=np.zeros(len(data))
+        diffdata[1:-1]=(data[2:]-data[0:-2])/2
+        ax2.plot(e,diffdata,drawstyle='steps-mid')
+        ax2.set_ylabel(yl)
+        ax2.set_xlabel(label)
+        ax2.set_xlim(*xlimits)
+        # kludge ...
+        if isylimit: ax2.set_ylim(-ylimits[1]/4,ylimits[1]/4)
+
+    def plot_gamma_spectra( self ):
+        calibration=self.calibrator.calibration
+        self.f1=plt.figure(1,(8,8))
+        ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
+        ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
+        self.axesgroup1=(ax11,ax12)
+        self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
+
+        ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
+        ax22=plt.subplot2grid( (4,4), (1,2),colspan=2)
+        self.axesgroup2=(ax21,ax22)
+        self.plot_calib_spectrum( self.axesgroup2, self.hCs, calibration, (0,50), (None,None))
+
+        ax31=plt.subplot2grid( (4,4), (2,0),colspan=2)
+        ax32=plt.subplot2grid( (4,4), (3,0),colspan=2)
+        self.axesgroup3=(ax31,ax32)
+        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
+
+        self.ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
+        plt.xlabel('Energy [MeV]')
+        plt.ylabel('Channel')
+        plt.tight_layout()
+
+
+        self.cid_click=self.f1.canvas.mpl_connect('button_press_event',self.pos_callback)
+        self.cid_enter=self.f1.canvas.mpl_connect('axes_enter_event',self.fig_callback)
+
+
+    def plot_TAC_spectra(self):
+        f2=plt.figure(2)
+        data,yl,xl=self.calibrator.hTAC.get_plotlabels()
+        tacslope,tacintercept,peakpos=self.calibrator.calibrateTAC(data)
         plt.subplot(211)
         plt.plot(data,drawstyle='steps-mid')
         plt.ylabel(yl)
-        plt.xlabel("channel")
+        plt.xlabel("Channel")
         for x in peakpos:
             plt.axvline(x,color='r',alpha=0.4)
         plt.subplot(212)
         plt.plot(peakpos,'bo')
         plt.plot(np.arange(len(peakpos)),np.arange(len(peakpos))*tacslope+tacintercept)
+        plt.xlabel("Time [ns]")
+        plt.ylabel("Channel")
 
+    def plot_gamma_calibration(self, slope, intercept):
+        xt=np.linspace(0.0,5.0,100.0)
+        #plt.figure(4)
+        self.ax4.cla()
+        self.ax4.plot(edges,chans,'bo')
+        self.ax4.plot(xt,intercept+xt*slope)
+        self.ax4.set_xlabel("Energy (MeVee)")
+        self.ax4.set_ylabel("Channel")
+        self.axesgroup1[0].cla()
+        self.axesgroup1[1].cla()
+        calibration=(slope,intercept)
+        self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
+        self.axesgroup2[0].cla()
+        self.axesgroup2[1].cla()
+        self.plot_calib_spectrum( self.axesgroup2, self.hCs, calibration, (0,50), (None,None))
+        self.axesgroup3[0].cla()
+        self.axesgroup3[1].cla()
+        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
+        plt.draw()
+        
+    def plot_all_spectra(self):
+        self.plot_gamma_spectra()
+        self.plot_TAC_spectra()
         plt.show()
 
     # define callbacks for matplotlib multicursor
@@ -250,25 +309,9 @@ class Calibrator(object):
                 c2=chans[3]
                 chans[2]=c2
                 chans[3]=c3
-            slope, intercept,r,p,stderr=linregress(edges,chans)
-            calibration=(slope,intercept)
-            print("L calibration: slope,intercept",slope*2, " ch/MeV", intercept*2, " ch")
-            print("Calibration corrected to full event size (1024)") 
-            xt=np.linspace(0.0,5.0,100.0)
-            #plt.figure(4)
-            self.ax4.cla()
-            self.ax4.plot(edges,chans,'bo')
-            self.ax4.plot(xt,intercept+xt*slope)
-            self.axesgroup1[0].cla()
-            self.axesgroup1[1].cla()
-            self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
-            self.axesgroup2[0].cla()
-            self.axesgroup2[1].cla()
-            self.plot_calib_spectrum( self.axesgroup2, self.hCs, calibration, (0,50), (None,None))
-            self.axesgroup3[0].cla()
-            self.axesgroup3[1].cla()
-            self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (0,200), (None,None))
-            plt.draw()
+            slope,intercept=self.calibrator.calibrateGamma(edges,chans)
+            self.plot_gamma_calibration(slope,intercept)
+
 
         #print(event.xdata)
 

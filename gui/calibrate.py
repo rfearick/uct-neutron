@@ -63,9 +63,17 @@ multi=None
 
 
 class Calibrator(object):
-
+    """
+    Handle calibration of neutron detection system
+    Liquid scintillator calibrated by using gamma sources: 22na, 137Cs and AmBe.
+    TAC calibrated using TAC calibrator
+    Four calibration list files are specified.
+    This object handles the histograms and sorting process.
+    input:
+        infileNa, infileCs, infileAmBe, infileTAC: 
+            file paths to respective list files
+    """
     def __init__( self, infileNa, infileCs, infileAmBe, infileTAC):
-
         self.infileNa = infileNa
         self.infileCs = infileCs
         self.infileAmBe = infileAmBe
@@ -77,7 +85,9 @@ class Calibrator(object):
         self.calibration=(None,None)
 
     def sort( self ):
-
+        """
+        Define event sources and histograms, then sort data
+        """
         # define event sources
         ENa=EventSource(self.infileNa)
         ECs=EventSource(self.infileCs)
@@ -108,12 +118,22 @@ class Calibrator(object):
         STAC=Sorter(ETAC, [hTAC] )
         sortadc=STAC.sort()
 
+        # keep reference to histograms
         self.hNa = hNa
         self.hCs = hCs
         self.hAmBe = hAmBe
         self.hTAC = hTAC
 
     def calibrateTAC(self,data):
+        """
+        Calibrate the TAC spectrum by linear regression on the peak positions 
+        in the histogram, which are determined by the TAC calibrator.
+        Spacing of peaks is 20.0 ns
+        input: data -- data array from histogram hTAC
+        return: tacslope, tacintercept, peakpos
+                slope, intercept in channel/ns,channel
+                peakpos is list of peak positions in spectrum, may be used in plots
+        """
 
         peakpos=[]
         N=len(data)
@@ -151,10 +171,18 @@ class Calibrator(object):
         print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)")
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
-        print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
-        return tacslope,tacintercept,peakpos
+        print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)",tacintercept)
+        return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 
     def calibrateGamma(self,edges,chans):
+        """
+        Calibrate gamma spectra using peaks and Compton edges.
+        Calibration by linear regression on positions determined by user on plots
+        input: 
+            edges,chans -- lists of calibration energies and positions in channels
+        returns:
+            slope, intercept -- channel/MeVee,channel
+        """
         slope, intercept,r,p,stderr=linregress(edges,chans)
         calibration=(slope,intercept)
         self.calibration=calibration
@@ -211,6 +239,9 @@ class CalibrationPlotter(object):
         if isylimit: ax2.set_ylim(-ylimits[1]/4,ylimits[1]/4)
 
     def plot_gamma_spectra( self ):
+        """
+        Plot the three gamma spectra
+        """
         calibration=self.calibrator.calibration
         self.f1=plt.figure(1,(8,8))
         ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
@@ -239,6 +270,10 @@ class CalibrationPlotter(object):
 
 
     def plot_TAC_spectra(self):
+        """
+        Plot TAC spectrum and calibration line
+        """
+        taccalstep=20.0 #ns
         f2=plt.figure(2)
         data,yl,xl=self.calibrator.hTAC.get_plotlabels()
         tacslope,tacintercept,peakpos=self.calibrator.calibrateTAC(data)
@@ -249,12 +284,16 @@ class CalibrationPlotter(object):
         for x in peakpos:
             plt.axvline(x,color='r',alpha=0.4)
         plt.subplot(212)
-        plt.plot(peakpos,'bo')
-        plt.plot(np.arange(len(peakpos)),np.arange(len(peakpos))*tacslope+tacintercept)
+        plt.plot(np.arange(len(peakpos))*taccalstep,peakpos,'bo')
+        plt.plot(np.arange(len(peakpos))*taccalstep,(np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
         plt.xlabel("Time [ns]")
         plt.ylabel("Channel")
+        plt.tight_layout()
 
     def plot_gamma_calibration(self, slope, intercept):
+        """
+        replot the gamma spectrum using a calibration
+        """
         xt=np.linspace(0.0,5.0,100.0)
         #plt.figure(4)
         self.ax4.cla()
@@ -275,6 +314,9 @@ class CalibrationPlotter(object):
         plt.draw()
         
     def plot_all_spectra(self):
+        """
+        Plot all calibration spectra
+        """
         self.plot_gamma_spectra()
         self.plot_TAC_spectra()
         plt.show()
@@ -317,7 +359,7 @@ class CalibrationPlotter(object):
 
     def fig_callback(self, event):
         """
-        Connect button click to active axes.
+        Turn on multicursor when cursor is over gamma calibration axes.
         """
         global multi
         ax=event.inaxes
@@ -330,5 +372,5 @@ class CalibrationPlotter(object):
         else:
             return
         #if multi is not None: multi.delete()
-        self.multi=MultiCursor(self.f1.canvas, currentaxes, color='r', lw=2,
+        self.multi=MultiCursor(self.f1.canvas, currentaxes, color='r', lw=1.5,
                         horizOn=False, vertOn=True, useblit=False)

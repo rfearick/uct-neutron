@@ -65,12 +65,13 @@ class SpectrumPlot(Qt.QObject):
         self.timer.timeout.connect(self.update)
         parent.bthread.finished.connect(self.stop_update)
        
-    def insertPlot(self):
+    def insertPlot(self, parentitem):
         """
         insert plot repr into list view widget
         """
         plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),self.name)
-        self.plotmodel.appendRow(plot)
+        #self.plotmodel.appendRow(plot)
+        parentitem.appendRow(plot)
         plot.setData(self)
    
     def doubleclickPlot(self,p):
@@ -138,6 +139,14 @@ class SpectrumPlot(Qt.QObject):
         self.timer.stop()
         print('figs ',plt.get_fignums())
         print("Window closed ",'thread',self.parent().bthread.isRunning())
+
+class SpectrumItemModel(Qt.QStandardItemModel):
+    def __init__(self, parent):
+        super().__init__(parent=parent)
+
+    #def insertPlots(self, plotlist):
+        
+
         
 def SetupSort(parent):
     """
@@ -168,12 +177,14 @@ def SetupSort(parent):
     s21=SpectrumPlot( parent, h21, "adc1 v adc2", "Long", "Short")
 
     model=parent.plotmodel
-
-    s1.insertPlot()
-    s2.insertPlot()
-    s3.insertPlot()
-    s4.insertPlot()
-    s21.insertPlot()
+    rootitem=model.invisibleRootItem()
+    treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"data sorted")
+    model.appendRow(treeitem)
+    s1.insertPlot(treeitem)
+    s2.insertPlot(treeitem)
+    s3.insertPlot(treeitem)
+    s4.insertPlot(treeitem)
+    s21.insertPlot(treeitem)
 
     return S
 
@@ -304,11 +315,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         """
 
         # set up a model for spectra plots
-        self.plotmodel=Qt.QStandardItemModel(self)
+        self.plotmodel=SpectrumItemModel(self)#Qt.QStandardItemModel(self)
         self.plotdock=Qt.QDockWidget("Plots",self)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
-        self.listview=Qt.QListView(self)
-        self.listview.setViewMode(Qt.QListView.IconMode)
+        self.listview=Qt.QTreeView(self)
+        #self.listview.setViewMode(Qt.QListView.IconMode)
         self.listview.setModel(self.plotmodel)
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         self.plotdock.setWidget(self.listview)
@@ -350,6 +361,10 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
         print("enter filer",m.text())
+        import calibrate as C
+        self.calib=C.Calibrator(C.infileNa,C.infileCs,C.infileAmBe,C.infileTAC)
+        self.calib.sort()
+        self.calib.plot_all_spectra()
         #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
         #print(dlg)
         
@@ -360,5 +375,5 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 app = Qt.QApplication(sys.argv)
 demo=NeutronAnalysisDemo()
 demo.show()
-demo.startSorting()
+#demo.startSorting()
 sys.exit(app.exec_())

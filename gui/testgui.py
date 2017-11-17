@@ -159,7 +159,7 @@ def SetupSort(parent):
     #infile="../NE213 100 MeV data/NE213_017_22Na.lst"
 
     E=EventSource(infile)
-    G=E.eventstream()
+    #G=E.eventstream()
 
     h1=Histogram(E, ADC1+ADC2+ADC3, 'ADC1', 512)
     h2=Histogram(E, ADC1+ADC2+ADC3, 'ADC2', 512)
@@ -195,6 +195,25 @@ def SetupSort(parent):
     t0=time.perf_counter()
     """
 
+class Task(Qt.QObject):
+    """
+    Define a task potentially run in background
+    """
+    finished=pyqtSignal()
+    def __init__(self, sorter):
+        super().__init__()
+        self.task = task
+
+    def starttask(self):
+        """
+        start the sort task; emit signal when done to release background thread
+        """
+        print("start task")
+        # task.start() ?
+        sortadc=self.task.start()
+        print("end task")
+        self.finished.emit()
+
 class BackgroundSort(Qt.QObject):
     """
     Run sort in a background thread
@@ -203,14 +222,15 @@ class BackgroundSort(Qt.QObject):
     def __init__(self, sorter):
         super().__init__()
         self.sorter = sorter
-
+        
     def task(self):
         """
         start the sort task; emit signal when done to release background thread
         """
-        print("start sort")
+        print("start task")
+        # task.start() ?
         sortadc=self.sorter.sort()
-        print("end sort")
+        print("end task")
         self.finished.emit()
         
         # sort returns histogram data of adc distribution -- do something with it
@@ -361,11 +381,17 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
         print("enter filer",m.text())
-        import calibrate as C
-        self.calib=C.Calibrator(C.infileNa,C.infileCs,C.infileAmBe,C.infileTAC)
+        self.startSorting()
+        """
+        import calibrate as calibrator
+        self.calib=calibrator.Calibrator(calibrator.infileNa,
+                                         calibrator.infileCs,
+                                         calibrator.infileAmBe,
+                                         calibrator.infileTAC)
         self.calib.sort()
-        self.calplot=C.CalibrationPlotter(self.calib)
-        self.calplot.plot_all_spectra()
+        self.calibplot=calibrator.CalibrationPlotter(self.calib)
+        self.calibplot.plot_all_spectra()
+        """
         #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
         #print(dlg)
         

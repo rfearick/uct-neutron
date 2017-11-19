@@ -1,9 +1,16 @@
 # for mac
-#import platform
-#if platform.system()=="Darwin":
-    #import matplotlib
-    #matplotlib.use("Qt5Agg")
+import platform
+if platform.system()=="Darwin":
+    import matplotlib
+    matplotlib.use("Qt5Agg")
 
+filepath="../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
+fileNa="NE213_032.lst"
+fileCs="NE213_034.lst"
+fileAmBe="NE213_035.lst"
+fileTAC="NE213_037.lst"
+
+    
 from eventlist import *
 
 import numpy as np
@@ -36,6 +43,11 @@ infileNa="../NE213 100 MeV data/NE213_017_22Na.lst"
 infileAmBe="../NE213 100 MeV data/NE213_020_AmBe.lst"
 # add in TAC
 infileTAC="../NE213 100 MeV data/NE213_022_TACcal.lst"
+
+infileCs=filepath+fileCs
+infileNa=filepath+fileNa
+infileAmBe=filepath+fileAmBe
+infileTAC=filepath+fileTAC
 
 
 
@@ -73,6 +85,7 @@ sortadc=STAC.sort()
 chans=[None,None,None,None]
 edges=[1.062,0.477,3.42,4.20]
 slope,intercept=0.0,0.0
+calibration=(None,None)
 
 # define callbacks for matplotlib multicursor
 def pos_callback(event):
@@ -105,12 +118,23 @@ def pos_callback(event):
             chans[2]=c2
             chans[3]=c3
         slope, intercept,r,p,stderr=linregress(edges,chans)
+        calibration=(slope,intercept)
         print("L calibration: slope,intercept",slope*2, " ch/MeV", intercept*2, " ch")
         print("Calibration corrected to full event size (1024)") 
         xt=np.linspace(0.0,5.0,100.0)
         #plt.figure(4)
+        ax4.cla()
         ax4.plot(edges,chans,'bo')
         ax4.plot(xt,intercept+xt*slope)
+        axesgroup1[0].cla()
+        axesgroup1[1].cla()
+        plot_calib_spectrum( axesgroup1, hNa, calibration, (0,120), (None,None))
+        axesgroup2[0].cla()
+        axesgroup2[1].cla()
+        plot_calib_spectrum( axesgroup2, hCs, calibration, (0,50), (None,None))
+        axesgroup3[0].cla()
+        axesgroup3[1].cla()
+        plot_calib_spectrum( axesgroup3, hAmBe, calibration, (0,200), (None,None))
         plt.draw()
 
     #print(event.xdata)
@@ -143,14 +167,45 @@ multi=None
 # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
 # calibrations.
 
+def plot_calib_spectrum( axgroup, hist, calib, xlimits, ylimits):
+    """
+    Plot a calibration spectrum of hist in axes of axgroup
+    axgroup: pair of axes in tuple
+    hist:    histogram containing spectrum
+    calib:   calibration tuple (slope, intercept); may be (None,None)
+    """
+    ax1,ax2=axgroup
+    data,yl,xl=hist.get_plotlabels()
+    slope,intercept=calib
+    iscalib=slope!=None and intercept!=None
+    isylimit=ylimits[0]!=None and ylimits[1]!=None
+    e=np.arange(hist.size1)
+    label="channel"
+    if iscalib:
+        e=(e-intercept)/slope
+        label="Energy (MeVee)"
+        xlimits=((xlimits[0]-intercept)/slope,(xlimits[1]-intercept)/slope)
+    ax1.plot(e,data,drawstyle='steps-mid')
+    ax1.set_ylabel(yl)
+    ax1.set_xlabel(label)
+    ax1.set_xlim(*xlimits)
+    if isylimit: ax1.set_ylim(*ylimits)
+    diffdata=np.zeros(len(data))
+    diffdata[1:-1]=(data[2:]-data[0:-2])/2
+    ax2.plot(e,diffdata,drawstyle='steps-mid')
+    ax2.set_ylabel(yl)
+    ax2.set_xlabel(label)
+    ax2.set_xlim(*xlimits)
+
 f1=plt.figure(1,(8,8))
 ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
+ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
+"""
 data,yl,xl=hNa.get_plotlabels()
 plt.plot(data,drawstyle='steps-mid')
 plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,150)
-ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
 diffdata=np.zeros(len(data))
 diffdata[1:-1]=(data[2:]-data[0:-2])/2
 plt.plot(diffdata,drawstyle='steps-mid')
@@ -158,7 +213,9 @@ plt.ylabel(yl)
 plt.xlabel("channel")
 plt.xlim(0,150)
 #plt.ylim(-200,200)
+"""
 axesgroup1=(ax11,ax12)
+plot_calib_spectrum( axesgroup1, hNa, calibration, (0,120), (None,None))
 
 ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
 data,yl,xl=hCs.get_plotlabels()
@@ -214,12 +271,13 @@ i=2
 #print(N)
 while i<N-6:
     if data[i]==0 and data[i+5]==0:
-        s=np.sum(data[i:i+6]*x[i:i+6])
+        s=np.sum(data[i:i+6])
         if s>10:
-            #print(i,s,data[i])
-            #print(data[i:i+6])
+            s=np.sum(data[i:i+6]*x[i:i+6])
             s=s/np.sum(data[i:i+6])
             peakpos.append(s)
+            #print(i,s,data[i])
+            #print(data[i:i+6],x[i:i+6])
             i=i+5
         else:
             i=i+1

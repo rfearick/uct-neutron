@@ -138,7 +138,6 @@ class EventSource(object):
         self.adcranges=adcranges
         self.adcmasks=adcmasks
 
-
     def eventstream(self):
         """
         generator for event stream
@@ -188,7 +187,7 @@ class EventSource(object):
                 #    continue
                 n,a,v=self.__getevent(b0, padded)
                 yield ADCEVENT,n,b0,v
- 
+
     def __getevent(self, adcs, padded):
         """
         read an adc event from stream and decode 
@@ -344,7 +343,7 @@ class Sorter(object):
             else:
                 self._groups.append(int(h.coincidencegroup))
                 self._hists.append([h])
-            
+
     def sort(self):
         """
         start sorting event stream.

@@ -345,8 +345,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.plotdock.setWidget(self.listview)
                                   
         # setup timer for plot updates
-        self.timer=Qt.QTimer()
-        self.timer.setInterval(2000)
+        #self.timer=Qt.QTimer()
+        #self.timer.setInterval(2000)
 
         self.tasklist.doubleClicked.connect(self.filer)
         #self.btnFreeze.clicked.connect(self.filer)

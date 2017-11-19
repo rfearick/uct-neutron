@@ -26,7 +26,7 @@ Calibration mainly uses Compton edges, and first escape peak (12C) of AmBe sourc
 Energies: 
    22Na      1.062 MeV
   137Cs      0.477 MeV
-   12C       3.42, 4.20 MeV  (AmBe source0
+   12C       3.42, 4.20 MeV  (AmBe source)
 
 Differentiating the spectrum and choosing the lowest point in the region of the 
 Compton edge seems to work well enough for scintillation detectors.

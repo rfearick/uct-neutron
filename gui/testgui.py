@@ -57,6 +57,7 @@ class SpectrumPlot(Qt.QObject):
         super().__init__(parent=parent)
         self.plotmodel=parent.plotmodel
         self.histo=h
+        self.unsorted=True
         self.name=name
         self.xname=xname
         self.yname=yname
@@ -99,7 +100,7 @@ class SpectrumPlot(Qt.QObject):
                 print("lasso")
             self.fig=nfig
             fig.canvas.manager.window.closing.connect(self.closed)
-            self.timer.start()
+            if self.unsorted: self.timer.start()
 
     def drawPlot(self,h):
         """
@@ -132,6 +133,7 @@ class SpectrumPlot(Qt.QObject):
         cease updating plot when sorting done
         """
         print('fig',self.fig, ' end update')
+        self.unsorted=False
         self.timer.stop()
 
     @pyqtSlot()
@@ -159,6 +161,7 @@ def SetupSort(parent):
     """
     filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
     fileNE213="NE213_025.lst"  # 0deg natLi
+    #fileNE213="FC_035.lst"  # 0deg natLi
     #fileNE213="NE213_026.lst"  # 0deg 12C 
     #fileNE213="NE213_028.lst"  # 16deg natLi
     #fileNE213="NE213_029.lst"  # 16deg 12C 
@@ -175,8 +178,8 @@ def SetupSort(parent):
     h3=Histogram(E, ADC1+ADC2+ADC3, 'ADC3', 512)
     h4=Histogram(E, ADC4, 'ADC4', 512)
     h21=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
-
-    histlist=[h1,h2,h3,h4,h21]
+    h13=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC3'), (256,256),label=('L','T'))
+    histlist=[h1,h2,h3,h4,h21,h13]
     S=Sorter( E, histlist)
 
     s1=SpectrumPlot( parent, h1, "adc 1", "channel", "counts per channel")
@@ -184,6 +187,7 @@ def SetupSort(parent):
     s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
     s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
     s21=SpectrumPlot( parent, h21, "adc1 v adc2", "Long", "Short")
+    s21=SpectrumPlot( parent, h13, "adc1 v adc3", "Long", "TOF")
 
     model=parent.plotmodel
     rootitem=model.invisibleRootItem()

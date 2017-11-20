@@ -187,17 +187,18 @@ def SetupSort(parent):
     s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
     s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
     s21=SpectrumPlot( parent, h21, "adc1 v adc2", "Long", "Short")
-    s21=SpectrumPlot( parent, h13, "adc1 v adc3", "Long", "TOF")
+    s13=SpectrumPlot( parent, h13, "adc1 v adc3", "Long", "TOF")
 
     model=parent.plotmodel
     rootitem=model.invisibleRootItem()
-    treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"data sorted")
+    treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"NE213 data")
     model.appendRow(treeitem)
     s1.insertPlot(treeitem)
     s2.insertPlot(treeitem)
     s3.insertPlot(treeitem)
     s4.insertPlot(treeitem)
     s21.insertPlot(treeitem)
+    s13.insertPlot(treeitem)
 
     return S
 
@@ -207,6 +208,43 @@ def SetupSort(parent):
     deadtimer=[]
     t0=time.perf_counter()
     """
+
+def SetupFCSort(parent):
+    """
+    Setup a sort of fission chamber data
+    This is hardwired here.
+    At some point this will change; there should be some sort builder program.
+    """
+    filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/FC/"
+    fileNE213="FC_035.lst"  # 0deg natLi
+
+    infile=filepath+fileNE213
+    
+    E=EventSource(infile)
+ 
+    h1=Histogram(E, ADC1+ADC3, 'ADC1', 512)
+    h3=Histogram(E, ADC1+ADC3, 'ADC3', 512)
+    h4=Histogram(E, ADC4, 'ADC4', 512)
+    h13=Histogram(E, ADC1+ADC3, ('ADC1','ADC3'), (256,256),label=('L','T'))
+    histlist=[h1,h3,h4,h13]
+    S=Sorter( E, histlist)
+
+    s1=SpectrumPlot( parent, h1, "adc 1", "channel", "counts per channel")
+    s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
+    s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
+    s13=SpectrumPlot( parent, h13, "adc1 v adc3", "Long", "TOF")
+
+    model=parent.plotmodel
+    rootitem=model.invisibleRootItem()
+    treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
+    model.appendRow(treeitem)
+    s1.insertPlot(treeitem)
+    s3.insertPlot(treeitem)
+    s4.insertPlot(treeitem)
+    s13.insertPlot(treeitem)
+
+    return S
+
 
 class Task(Qt.QObject):
     """
@@ -250,7 +288,7 @@ class BackgroundSort(Qt.QObject):
         
 
 # initial analysis tasks
-analysis_tasks=["Calibrate","Sort"]
+analysis_tasks=["Calibrate","Sort NE213","Sort FC"]
 
 class NeutronAnalysisDemo(Qt.QMainWindow):
     """
@@ -364,14 +402,14 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.tasklist.doubleClicked.connect(self.filer)
         #self.btnFreeze.clicked.connect(self.filer)
 
-    def startSorting(self):
+    def startSorting(self, setupsorter):
         """
         start a sort process
         this will evolve to dispatch different sorts at various times
         """
         # setup sort in background
         self.bthread=Qt.QThread()
-        S=SetupSort(self)
+        S=setupsorter(self)
         bobj=BackgroundSort(S)
         bobj.moveToThread(self.bthread)
         self.bthread.started.connect(bobj.task)
@@ -393,18 +431,22 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def filer(self,p):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
+        sorttype=m.text()
         print("enter filer",m.text())
-        self.startSorting()
-        """
-        import calibrate as calibrator
-        self.calib=calibrator.Calibrator(calibrator.infileNa,
-                                         calibrator.infileCs,
-                                         calibrator.infileAmBe,
-                                         calibrator.infileTAC)
-        self.calib.sort()
-        self.calibplot=calibrator.CalibrationPlotter(self.calib)
-        self.calibplot.plot_all_spectra()
-        """
+        if sorttype=="Sort NE213":
+            self.startSorting(SetupSort)
+        elif sorttype=="Sort FC":
+            self.startSorting(SetupFCSort)
+        elif sorttype=="Calibrate":
+            import calibrate as calibrator
+            self.calib=calibrator.Calibrator(calibrator.infileNa,
+                                             calibrator.infileCs,
+                                             calibrator.infileAmBe,
+                                             calibrator.infileTAC)
+            self.calib.sort()
+            self.calibplot=calibrator.CalibrationPlotter(self.calib)
+            self.calibplot.plot_all_spectra()
+    
         #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
         #print(dlg)
         

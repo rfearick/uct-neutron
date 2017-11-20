@@ -9,6 +9,9 @@ SpectrumPlot -- too many names
 SpectrumPlot -- handle start of sort/interaction with update timer
 """
 
+filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
+
+
 import sys
 sys.path.append("..") # for eventlist.py
 from eventlist import Histogram, Sorter, EventSource
@@ -154,10 +157,16 @@ def SetupSort(parent):
     This is hardwired here.
     At some point this will change; there should be some sort builder program.
     """
-    infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
+    filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
+    fileNE213="NE213_025.lst"  # 0deg natLi
+    #fileNE213="NE213_026.lst"  # 0deg 12C 
+    #fileNE213="NE213_028.lst"  # 16deg natLi
+    #fileNE213="NE213_029.lst"  # 16deg 12C 
+    #infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
     #infile="../NE213 100 MeV data/NE213_019_137Cs.lst"
     #infile="../NE213 100 MeV data/NE213_017_22Na.lst"
-
+    infile=filepath+fileNE213
+    
     E=EventSource(infile)
     #G=E.eventstream()
 

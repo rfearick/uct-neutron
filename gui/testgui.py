@@ -401,6 +401,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
         self.tasklist.doubleClicked.connect(self.filer)
         #self.btnFreeze.clicked.connect(self.filer)
+        self.bthread = None
 
     def startSorting(self, setupsorter):
         """
@@ -408,6 +409,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         this will evolve to dispatch different sorts at various times
         """
         # setup sort in background
+        if self.bthread is None or self.bthread.isActive():
+            print("Sort already in progress")
+            return
         self.bthread=Qt.QThread()
         S=setupsorter(self)
         bobj=BackgroundSort(S)

@@ -49,25 +49,30 @@ class SpectrumPlot(Qt.QObject):
     define a spectrum plot
     parent:    main window; defines the plot model we use
     h     :    histogram to plot
+    tree  :    StardardItemModel row into which plot is inserted in TreeView
     name  :    name given to histogram
     xname :    label for x axis
     yname :    label for y axis
     """
-    def __init__( self, parent, h, name, xname, yname  ):
+    def __init__( self, parent, h, tree, name, xname, yname  ):
         super().__init__(parent=parent)
         self.plotmodel=parent.plotmodel
         self.histo=h
         self.unsorted=True
+        self.tree=tree
         self.name=name
         self.xname=xname
         self.yname=yname
         self.fig=None
         print("plot object created")
-        parent.listview.doubleClicked.connect(self.doubleclickPlot)
+        parent.listview.doubleClicked.connect(self.openPlot)
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.update)
         parent.bthread.finished.connect(self.stop_update)
+        # now insert ourself into listview
+        self.insertPlot(tree)
+
        
     def insertPlot(self, parentitem):
         """
@@ -78,7 +83,7 @@ class SpectrumPlot(Qt.QObject):
         parentitem.appendRow(plot)
         plot.setData(self)
    
-    def doubleclickPlot(self,p):
+    def openPlot(self,p):
         """
         handle double click signal from listview
         plot corresponding data
@@ -123,7 +128,6 @@ class SpectrumPlot(Qt.QObject):
         """
         update the plot if timer is active (i.e. sorting active)
         """
-        print("update",self.timer.isActive())
         nfig=self.fig
         fig=plt.figure(nfig)
         plt.cla()
@@ -184,13 +188,20 @@ def SetupSort(parent):
     histlist=[h1,h2,h3,h4,h21,h13]
     S=Sorter( E, histlist)
 
-    s1=SpectrumPlot( parent, h1, "NE213 Adc 1", "channel", "counts per channel")
-    s2=SpectrumPlot( parent, h2, "NE213 Adc 2", "channel", "counts per channel")
-    s3=SpectrumPlot( parent, h3, "NE213 Adc 3", "channel", "counts per channel")
-    s4=SpectrumPlot( parent, h4, "NE213 Adc 4", "channel", "counts per channel")
-    s21=SpectrumPlot( parent, h21, "NE213 Adc1 v Adc2", "Long", "Short")
-    s13=SpectrumPlot( parent, h13, "NE213 Adc1 v Adc3", "Long", "TOF")
+    # create tree for plots widget
+    model=parent.plotmodel
+    tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"NE213 data")
+    model.appendRow(tree)
 
+    # create plot items 
+    s1=SpectrumPlot( parent, h1, tree, "NE213 Adc 1", "channel", "counts per channel")
+    s2=SpectrumPlot( parent, h2, tree, "NE213 Adc 2", "channel", "counts per channel")
+    s3=SpectrumPlot( parent, h3, tree, "NE213 Adc 3", "channel", "counts per channel")
+    s4=SpectrumPlot( parent, h4, tree, "NE213 Adc 4", "channel", "counts per channel")
+    s21=SpectrumPlot( parent, h21, tree, "NE213 Adc1 v Adc2", "Long", "Short")
+    s13=SpectrumPlot( parent, h13, tree, "NE213 Adc1 v Adc3", "Long", "TOF")
+
+    """
     model=parent.plotmodel
     rootitem=model.invisibleRootItem()
     treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"NE213 data")
@@ -201,7 +212,7 @@ def SetupSort(parent):
     s4.insertPlot(treeitem)
     s21.insertPlot(treeitem)
     s13.insertPlot(treeitem)
-
+    """
     return S
 
     """
@@ -231,11 +242,17 @@ def SetupFCSort(parent):
     histlist=[h1,h3,h4,h13]
     S=Sorter( E, histlist)
 
-    s1=SpectrumPlot( parent, h1, "FC Adc 1", "channel", "counts per channel")
-    s3=SpectrumPlot( parent, h3, "FC Adc 3", "channel", "counts per channel")
-    s4=SpectrumPlot( parent, h4, "FC Adc 4", "channel", "counts per channel")
-    s13=SpectrumPlot( parent, h13, "FC Adc1 v Adc3", "Long", "TOF")
+    # create tree for plots widget
+    model=parent.plotmodel
+    tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
+    model.appendRow(tree)
+    # create plot items
+    s1=SpectrumPlot( parent, h1, tree, "FC Adc 1", "channel", "counts per channel")
+    s3=SpectrumPlot( parent, h3, tree, "FC Adc 3", "channel", "counts per channel")
+    s4=SpectrumPlot( parent, h4, tree, "FC Adc 4", "channel", "counts per channel")
+    s13=SpectrumPlot( parent, h13, tree, "FC Adc1 v Adc3", "Long", "TOF")
 
+    """
     model=parent.plotmodel
     rootitem=model.invisibleRootItem()
     treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
@@ -244,7 +261,7 @@ def SetupFCSort(parent):
     s3.insertPlot(treeitem)
     s4.insertPlot(treeitem)
     s13.insertPlot(treeitem)
-
+    """
     return S
 
 

@@ -480,7 +480,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                                              calibrator.infileAmBe,
                                              calibrator.infileTAC)
             self.calib.sort()
+            # create tree for plots widget
+            model=self.plotmodel
+            tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Calibration")
+            model.appendRow(tree)
+            ploticon=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")
             self.calibplot=calibrator.CalibrationPlotter(self.calib)
+            self.calibplot.insertPlot(tree, ploticon)
             self.calibplot.plot_all_spectra()
     
         #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')

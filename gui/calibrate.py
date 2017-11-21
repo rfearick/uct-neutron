@@ -203,6 +203,7 @@ class CalibrationPlotter(object):
         self.hAmBe = calibrator.hAmBe
         self.hTAC = calibrator.hTAC
 
+
         
     # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.
@@ -322,6 +323,19 @@ class CalibrationPlotter(object):
         self.plot_TAC_spectra()
         #plt.show()
 
+    def openPlot(self):
+        self.plot_all_spectra()
+
+       
+    def insertPlot(self, tree, ploticon):
+        """
+        insert plot repr into list view widget
+        """
+        #self.plotmodel.appendRow(plot)
+        tree.appendRow(ploticon)
+        ploticon.setData(self)
+
+        
     # define callbacks for matplotlib multicursor
     def pos_callback(self, event):
         """

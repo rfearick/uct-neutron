@@ -243,7 +243,8 @@ class CalibrationPlotter(object):
         Plot the three gamma spectra
         """
         calibration=self.calibrator.calibration
-        self.f1=plt.figure(1,(8,8))
+        self.f1=plt.figure("Gamma calibration",(8,8))
+        self.f1.canvas.draw_idle()
         ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
         ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
         self.axesgroup1=(ax11,ax12)
@@ -274,7 +275,8 @@ class CalibrationPlotter(object):
         Plot TAC spectrum and calibration line
         """
         taccalstep=20.0 #ns
-        f2=plt.figure(2)
+        f2=plt.figure("TAC calibration")
+        f2.canvas.draw_idle()
         data,yl,xl=self.calibrator.hTAC.get_plotlabels()
         tacslope,tacintercept,peakpos=self.calibrator.calibrateTAC(data)
         plt.subplot(211)
@@ -295,7 +297,6 @@ class CalibrationPlotter(object):
         replot the gamma spectrum using a calibration
         """
         xt=np.linspace(0.0,5.0,100.0)
-        #plt.figure(4)
         self.ax4.cla()
         self.ax4.plot(edges,chans,'bo')
         self.ax4.plot(xt,intercept+xt*slope)
@@ -311,7 +312,7 @@ class CalibrationPlotter(object):
         self.axesgroup3[0].cla()
         self.axesgroup3[1].cla()
         self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
-        plt.draw()
+        #plt.draw()
         
     def plot_all_spectra(self):
         """
@@ -319,7 +320,7 @@ class CalibrationPlotter(object):
         """
         self.plot_gamma_spectra()
         self.plot_TAC_spectra()
-        plt.show()
+        #plt.show()
 
     # define callbacks for matplotlib multicursor
     def pos_callback(self, event):

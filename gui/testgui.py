@@ -91,7 +91,7 @@ class SpectrumPlot(Qt.QObject):
         #nfig=p.row()+1
         fig=plt.figure(self.name)
         nfig=fig.number
-        print('fig',plt.get_fignums(),nfig, h.dims)
+        print('fig',plt.get_fignums(),nfig, h.dims, self.unsorted)
         self.drawPlot(h)
         fig.canvas.draw_idle()
         if self.fig is None:
@@ -99,9 +99,9 @@ class SpectrumPlot(Qt.QObject):
                 ax=fig.gca()
                 self.lasso=MyLassoSelector(ax,onselect,useblit=False)
                 print("lasso")
-            self.fig=nfig
-            fig.canvas.manager.window.closing.connect(self.closed)
-            if self.unsorted: self.timer.start()
+        self.fig=nfig
+        fig.canvas.manager.window.closing.connect(self.closed)
+        if self.unsorted: self.timer.start()
 
     def drawPlot(self,h):
         """
@@ -123,6 +123,7 @@ class SpectrumPlot(Qt.QObject):
         """
         update the plot if timer is active (i.e. sorting active)
         """
+        print("update",self.timer.isActive())
         nfig=self.fig
         fig=plt.figure(nfig)
         plt.cla()
@@ -144,7 +145,7 @@ class SpectrumPlot(Qt.QObject):
         """
         self.timer.stop()
         print('figs ',plt.get_fignums())
-        print("Window closed ",'thread',self.parent().bthread.isRunning())
+        print("Window closed ",'thread',self.parent().bthread.isRunning(),'timer',self.timer.isActive())
 
 class SpectrumItemModel(Qt.QStandardItemModel):
     def __init__(self, parent):

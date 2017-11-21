@@ -409,7 +409,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         this will evolve to dispatch different sorts at various times
         """
         # setup sort in background
-        if self.bthread is None or self.bthread.isActive():
+        if self.bthread is None:
+            pass
+        elif self.bthread.isRunning():
             print("Sort already in progress")
             return
         self.bthread=Qt.QThread()

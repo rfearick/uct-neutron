@@ -88,9 +88,10 @@ class SpectrumPlot(Qt.QObject):
         s=plot.data()
         if s != self: return
         h=self.histo
-        nfig=p.row()+1
-        fig=plt.figure(nfig)
-        print(plt.get_fignums(),nfig, h.dims)
+        #nfig=p.row()+1
+        fig=plt.figure(self.name)
+        nfig=fig.number
+        print('fig',plt.get_fignums(),nfig, h.dims)
         self.drawPlot(h)
         fig.canvas.draw_idle()
         if self.fig is None:
@@ -182,12 +183,12 @@ def SetupSort(parent):
     histlist=[h1,h2,h3,h4,h21,h13]
     S=Sorter( E, histlist)
 
-    s1=SpectrumPlot( parent, h1, "adc 1", "channel", "counts per channel")
-    s2=SpectrumPlot( parent, h2, "ADC 2", "channel", "counts per channel")
-    s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
-    s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
-    s21=SpectrumPlot( parent, h21, "adc1 v adc2", "Long", "Short")
-    s13=SpectrumPlot( parent, h13, "adc1 v adc3", "Long", "TOF")
+    s1=SpectrumPlot( parent, h1, "NE213 Adc 1", "channel", "counts per channel")
+    s2=SpectrumPlot( parent, h2, "NE213 Adc 2", "channel", "counts per channel")
+    s3=SpectrumPlot( parent, h3, "NE213 Adc 3", "channel", "counts per channel")
+    s4=SpectrumPlot( parent, h4, "NE213 Adc 4", "channel", "counts per channel")
+    s21=SpectrumPlot( parent, h21, "NE213 Adc1 v Adc2", "Long", "Short")
+    s13=SpectrumPlot( parent, h13, "NE213 Adc1 v Adc3", "Long", "TOF")
 
     model=parent.plotmodel
     rootitem=model.invisibleRootItem()
@@ -229,10 +230,10 @@ def SetupFCSort(parent):
     histlist=[h1,h3,h4,h13]
     S=Sorter( E, histlist)
 
-    s1=SpectrumPlot( parent, h1, "adc 1", "channel", "counts per channel")
-    s3=SpectrumPlot( parent, h3, "adc 3", "channel", "counts per channel")
-    s4=SpectrumPlot( parent, h4, "adc 4", "channel", "counts per channel")
-    s13=SpectrumPlot( parent, h13, "adc1 v adc3", "Long", "TOF")
+    s1=SpectrumPlot( parent, h1, "FC Adc 1", "channel", "counts per channel")
+    s3=SpectrumPlot( parent, h3, "FC Adc 3", "channel", "counts per channel")
+    s4=SpectrumPlot( parent, h4, "FC Adc 4", "channel", "counts per channel")
+    s13=SpectrumPlot( parent, h13, "FC Adc1 v Adc3", "Long", "TOF")
 
     model=parent.plotmodel
     rootitem=model.invisibleRootItem()

@@ -65,7 +65,7 @@ class SpectrumPlot(Qt.QObject):
         self.yname=yname
         self.fig=None
         print("plot object created")
-        parent.listview.doubleClicked.connect(self.openPlot)
+        #parent.listview.doubleClicked.connect(self.openPlot)
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.update)
@@ -83,15 +83,15 @@ class SpectrumPlot(Qt.QObject):
         parentitem.appendRow(plot)
         plot.setData(self)
    
-    def openPlot(self,p):
+    def openPlot(self):
         """
         handle double click signal from listview
         plot corresponding data
         """
         from polygonlasso import MyLassoSelector
-        plot=self.plotmodel.itemFromIndex(p)
-        s=plot.data()
-        if s != self: return
+        #plot=self.plotmodel.itemFromIndex(p)
+        #s=plot.data()
+        #if s != self: return
         h=self.histo
         #nfig=p.row()+1
         fig=plt.figure(self.name)
@@ -154,6 +154,17 @@ class SpectrumPlot(Qt.QObject):
 class SpectrumItemModel(Qt.QStandardItemModel):
     def __init__(self, parent):
         super().__init__(parent=parent)
+        parent.listview.doubleClicked.connect(self.openPlot)
+        self.parent=parent
+
+    def openPlot(self,p):
+        """
+        Find where double-click and open the plot
+        """
+        plot=self.parent.plotmodel.itemFromIndex(p)
+        s=plot.data()
+        s.openPlot()
+
 
     #def insertPlots(self, plotlist):
         
@@ -405,10 +416,10 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         """
 
         # set up a model for spectra plots
-        self.plotmodel=SpectrumItemModel(self)#Qt.QStandardItemModel(self)
         self.plotdock=Qt.QDockWidget("Plots",self)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
         self.listview=Qt.QTreeView(self)
+        self.plotmodel=SpectrumItemModel(self)#Qt.QStandardItemModel(self)
         #self.listview.setViewMode(Qt.QListView.IconMode)
         self.listview.setModel(self.plotmodel)
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)

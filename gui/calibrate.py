@@ -10,7 +10,6 @@ fileCs="NE213_034.lst"
 fileAmBe="NE213_035.lst"
 fileTAC="NE213_037.lst"
 
-    
 from eventlist import *
 
 import numpy as np
@@ -55,12 +54,9 @@ edges=[1.062,0.477,3.42,4.20]
 slope,intercept=0.0,0.0
 calibration=(None,None)
 
-    
 cid_multi=None
 fcur=None
 multi=None
-
-
 
 class Calibrator(object):
     """
@@ -202,9 +198,7 @@ class CalibrationPlotter(object):
         self.hCs = calibrator.hCs
         self.hAmBe = calibrator.hAmBe
         self.hTAC = calibrator.hTAC
-
-
-        
+  
     # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.
     def plot_calib_spectrum( self, axgroup, hist, calib, xlimits, ylimits):
@@ -266,10 +260,10 @@ class CalibrationPlotter(object):
         plt.ylabel('Channel')
         plt.tight_layout()
 
-
-        self.cid_click=self.f1.canvas.mpl_connect('button_press_event',self.pos_callback)
-        self.cid_enter=self.f1.canvas.mpl_connect('axes_enter_event',self.fig_callback)
-
+        self.cid_click=self.f1.canvas.mpl_connect('button_press_event',
+                                                  self.pos_callback)
+        self.cid_enter=self.f1.canvas.mpl_connect('axes_enter_event',
+                                                  self.fig_callback)
 
     def plot_TAC_spectra(self):
         """
@@ -288,7 +282,8 @@ class CalibrationPlotter(object):
             plt.axvline(x,color='r',alpha=0.4)
         plt.subplot(212)
         plt.plot(np.arange(len(peakpos))*taccalstep,peakpos,'bo')
-        plt.plot(np.arange(len(peakpos))*taccalstep,(np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
+        plt.plot(np.arange(len(peakpos))*taccalstep,
+                 (np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
         plt.xlabel("Time [ns]")
         plt.ylabel("Channel")
         plt.tight_layout()
@@ -306,14 +301,16 @@ class CalibrationPlotter(object):
         self.axesgroup1[0].cla()
         self.axesgroup1[1].cla()
         calibration=(slope,intercept)
-        self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
+        self.plot_calib_spectrum( self.axesgroup1, self.hNa,
+                                  calibration, (0,120), (None,None))
         self.axesgroup2[0].cla()
         self.axesgroup2[1].cla()
-        self.plot_calib_spectrum( self.axesgroup2, self.hCs, calibration, (0,50), (None,None))
+        self.plot_calib_spectrum( self.axesgroup2, self.hCs,
+                                  calibration, (0,50), (None,None))
         self.axesgroup3[0].cla()
         self.axesgroup3[1].cla()
-        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
-        #plt.draw()
+        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe,
+                                  calibration, (50,150), (0,2000))
         
     def plot_all_spectra(self):
         """
@@ -321,7 +318,6 @@ class CalibrationPlotter(object):
         """
         self.plot_gamma_spectra()
         self.plot_TAC_spectra()
-        #plt.show()
 
     def openPlot(self):
         self.plot_all_spectra()
@@ -331,7 +327,6 @@ class CalibrationPlotter(object):
         """
         insert plot repr into list view widget
         """
-        #self.plotmodel.appendRow(plot)
         tree.appendRow(ploticon)
         ploticon.setData(self)
 
@@ -369,9 +364,6 @@ class CalibrationPlotter(object):
             slope,intercept=self.calibrator.calibrateGamma(edges,chans)
             self.plot_gamma_calibration(slope,intercept)
 
-
-        #print(event.xdata)
-
     def fig_callback(self, event):
         """
         Turn on multicursor when cursor is over gamma calibration axes.
@@ -388,4 +380,4 @@ class CalibrationPlotter(object):
             return
         #if multi is not None: multi.delete()
         self.multi=MultiCursor(self.f1.canvas, currentaxes, color='r', lw=1.5,
-                        horizOn=False, vertOn=True, useblit=False)
+                               horizOn=False, vertOn=True, useblit=False)

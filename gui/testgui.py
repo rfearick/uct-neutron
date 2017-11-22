@@ -164,12 +164,7 @@ class SpectrumItemModel(Qt.QStandardItemModel):
         plot=self.parent.plotmodel.itemFromIndex(p)
         s=plot.data()
         s.openPlot()
-
-
-    #def insertPlots(self, plotlist):
-        
-
-        
+                
 def SetupSort(parent):
     """
     Setup a sort of data
@@ -178,17 +173,14 @@ def SetupSort(parent):
     """
     filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
     fileNE213="NE213_025.lst"  # 0deg natLi
-    #fileNE213="FC_035.lst"  # 0deg natLi
     #fileNE213="NE213_026.lst"  # 0deg 12C 
     #fileNE213="NE213_028.lst"  # 16deg natLi
     #fileNE213="NE213_029.lst"  # 16deg 12C 
     #infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
-    #infile="../NE213 100 MeV data/NE213_019_137Cs.lst"
-    #infile="../NE213 100 MeV data/NE213_017_22Na.lst"
+    
     infile=filepath+fileNE213
     
     E=EventSource(infile)
-    #G=E.eventstream()
 
     h1=Histogram(E, ADC1+ADC2+ADC3, 'ADC1', 512)
     h2=Histogram(E, ADC1+ADC2+ADC3, 'ADC2', 512)
@@ -212,18 +204,6 @@ def SetupSort(parent):
     s21=SpectrumPlot( parent, h21, tree, "NE213 Adc1 v Adc2", "Long", "Short")
     s13=SpectrumPlot( parent, h13, tree, "NE213 Adc1 v Adc3", "Long", "TOF")
 
-    """
-    model=parent.plotmodel
-    rootitem=model.invisibleRootItem()
-    treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"NE213 data")
-    model.appendRow(treeitem)
-    s1.insertPlot(treeitem)
-    s2.insertPlot(treeitem)
-    s3.insertPlot(treeitem)
-    s4.insertPlot(treeitem)
-    s21.insertPlot(treeitem)
-    s13.insertPlot(treeitem)
-    """
     return S
 
     """
@@ -263,18 +243,7 @@ def SetupFCSort(parent):
     s4=SpectrumPlot( parent, h4, tree, "FC Adc 4", "channel", "counts per channel")
     s13=SpectrumPlot( parent, h13, tree, "FC Adc1 v Adc3", "Long", "TOF")
 
-    """
-    model=parent.plotmodel
-    rootitem=model.invisibleRootItem()
-    treeitem=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
-    model.appendRow(treeitem)
-    s1.insertPlot(treeitem)
-    s3.insertPlot(treeitem)
-    s4.insertPlot(treeitem)
-    s13.insertPlot(treeitem)
-    """
     return S
-
 
 class Task(Qt.QObject):
     """
@@ -316,7 +285,6 @@ class BackgroundSort(Qt.QObject):
         
         # sort returns histogram data of adc distribution -- do something with it
         
-
 # initial analysis tasks
 analysis_tasks=["Calibrate","Sort NE213","Sort FC"]
 
@@ -337,8 +305,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.mainwin=Qt.QWidget(self)
         self.setGeometry(10,10,1024,768)
         self.setCentralWidget(self.mainwin)
-        #self.setUnifiedTitleAndToolBarOnMac(True)
-              
+               
         self.stack=Qt.QDockWidget("Tasks",self)
         self.stack.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
 
@@ -425,12 +392,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         self.plotdock.setWidget(self.listview)
                                   
-        # setup timer for plot updates
-        #self.timer=Qt.QTimer()
-        #self.timer.setInterval(2000)
-
         self.tasklist.doubleClicked.connect(self.filer)
-        #self.btnFreeze.clicked.connect(self.filer)
         self.bthread = None
 
     def startSorting(self, setupsorter):

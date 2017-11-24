@@ -79,6 +79,7 @@ class Calibrator(object):
         self.hAmBe = None
         self.hTAC = None
         self.calibration=(None,None)
+        self.TACcalibration=(None,None)
 
     def sort( self ):
         """
@@ -168,6 +169,7 @@ class Calibrator(object):
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
         print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)",tacintercept)
+        self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
         return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 
     def calibrateGamma(self,edges,chans):
@@ -180,11 +182,11 @@ class Calibrator(object):
             slope, intercept -- channel/MeVee,channel
         """
         slope, intercept,r,p,stderr=linregress(edges,chans)
-        calibration=(slope,intercept)
-        self.calibration=calibration
-        print("L calibration: slope,intercept",slope*2, " ch/MeV", intercept*2, " ch")
+        calibration=(slope*2,intercept*2)
+        self.calibration=calibration  #ch/MeV at 1024 ch
+        print("L calibration: slope,intercept",slope, " ch/MeV", intercept, " ch")
         print("Calibration corrected to full event size (1024)")
-        return slope, intercept
+        return self.calibration
 
 
 class CalibrationPlotter(object):
@@ -238,6 +240,12 @@ class CalibrationPlotter(object):
         Plot the three gamma spectra
         """
         calibration=self.calibrator.calibration
+        calibrated=False
+        if calibration[0] is not None and calibration[1] is not None:
+            divisor=self.hNa.divisor1
+            calibration=(calibration[0]/divisor,calibration[1]/divisor)
+            slope,intercept=calibration
+            calibrated=True
         self.f1=plt.figure("Gamma calibration",(8,8))
         self.f1.canvas.draw_idle()
         ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
@@ -256,6 +264,10 @@ class CalibrationPlotter(object):
         self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
 
         self.ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
+        if calibrated:
+            xt=np.linspace(0.0,5.0,100.0)
+            self.ax4.plot(edges,chans,'bo')
+            self.ax4.plot(xt,intercept+xt*slope)       
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
         plt.tight_layout()
@@ -292,6 +304,9 @@ class CalibrationPlotter(object):
         """
         replot the gamma spectrum using a calibration
         """
+        divisor=self.hNa.divisor1
+        slope=slope/divisor
+        intercept=intercept/divisor
         xt=np.linspace(0.0,5.0,100.0)
         self.ax4.cla()
         self.ax4.plot(edges,chans,'bo')

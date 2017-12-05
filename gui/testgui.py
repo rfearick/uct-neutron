@@ -281,10 +281,9 @@ class BackgroundSort(Qt.QObject):
         # task.start() ?
         sortadc=self.sorter.sort()
         print("end task")
-        self.finished.emit()
-        
+        self.finished.emit()     
         # sort returns histogram data of adc distribution -- do something with it
-        
+    
 # initial analysis tasks
 analysis_tasks=["Calibrate","Sort NE213","Sort FC"]
 
@@ -302,24 +301,63 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.averageState = 0
         self.autocState = 0
 
-        self.mainwin=Qt.QWidget(self)
+        self.fileNa=None
+        self.fileCs=None
+        self.fileAmBe=None
+        self.fileTAC=None
+        self.fileNE213=None
+        self.fileFC=None
+        self.files=[self.fileNa,self.fileCs,self.fileAmBe,self.fileTAC,
+                   self.fileNE213,self.fileFC]
+
+        self.mainwin=Qt.QSplitter(self)
         self.setGeometry(10,10,1024,768)
         self.setCentralWidget(self.mainwin)
                
         self.stack=Qt.QDockWidget("Tasks",self)
         self.stack.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
 
-        self.tasklist=Qt.QListWidget(self.stack)
+        ##self.tasklist=Qt.QListWidget(self.stack)
+        self.taskwidget=Qt.QWidget(None, QtCore.Qt.CustomizeWindowHint|QtCore.Qt.WindowTitleHint|QtCore.Qt.WindowSystemMenuHint|QtCore.Qt.Window|QtCore.Qt.WindowStaysOnTopHint)
+        print("1 %x"%(0x7ffffff&int(self.taskwidget.windowFlags())))
+        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()&0x7fffffff)
+        vlayout=Qt.QVBoxLayout()
+        self.tasklist=Qt.QListWidget(self)
+        print("2 %x"%(0x7ffffff&int(self.tasklist.windowFlags())))
+        #self.taskwidget=self.tasklist
         self.tasklist.addItems(analysis_tasks)
         self.tasklist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        self.stack.setWidget(self.tasklist)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.stack)
+        self.tasklist.setWindowFlags(QtCore.Qt.WindowTitleHint)
+        self.tasklist.setWindowTitle("xxx")
+        print("3 %x"%(int(self.taskwidget.windowFlags())))
+        #self.stack.setWidget(self.tasklist)
+        #self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.stack)
+        #self.taskwidget.setWidget(self.tasklist)
+        #self.taskwidget.setWindowFlags((self.taskwidget.windowFlags()|QtCore.Qt.CustomizeWindowHint)^QtCore.Qt.WindowCloseButtonHint)
+        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|QtCore.Qt.CustomizeWindowHint)
+        print("4 %x"%int(self.taskwidget.windowFlags()))
+        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|QtCore.Qt.CustomizeWindowHint|QtCore.Qt.WindowTitleHint|QtCore.Qt.WindowSystemMenuHint|QtCore.Qt.Window|QtCore.Qt.WindowStaysOnTopHint)
+        #self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|(0x00000ff))
+        print("5 %x"%int(self.taskwidget.windowFlags()))
+        vlayout.addWidget(self.tasklist)
+        self.taskwidget.setLayout(vlayout)
+        self.mainwin.addWidget(self.taskwidget)
+        #self.taskwidget.setParent(None)
+        print("6 %x"%int(self.taskwidget.windowFlags()))
+        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|QtCore.Qt.SubWindow)
+        print("7 %x"%int(self.taskwidget.windowFlags()))
+        self.taskwidget.show()
         
         self.dock=Qt.QDockWidget("Done",self)
+        from fileentry import FilePicker
+        self.filepick=FilePicker()
+        self.dock.setWidget(self.filepick)
+        """
         self.donelist=Qt.QListWidget(self.dock)
         self.donelist.addItems(["Done","Also"])
         self.donelist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         self.dock.setWidget(self.donelist)
+"""
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.dock)
  
         # example code taken from dualscopeN.py
@@ -393,6 +431,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.plotdock.setWidget(self.listview)
                                   
         self.tasklist.doubleClicked.connect(self.filer)
+        self.filepick.valueChanged.connect(self.setFilePaths)
         self.bthread = None
 
     def startSorting(self, setupsorter):
@@ -430,7 +469,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
         sorttype=m.text()
-        print("enter filer",m.text())
+        #print("enter filer",m.text())
+            
         if sorttype=="Sort NE213":
             self.startSorting(SetupSort)
         elif sorttype=="Sort FC":
@@ -450,9 +490,18 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.calibplot=calibrator.CalibrationPlotter(self.calib)
             self.calibplot.insertPlot(tree, ploticon)
             self.calibplot.plot_all_spectra()
-    
-        #dlg=Qt.QFileDialog.getOpenFileNames(self,'Open file','.')
-        #print(dlg)
+        """
+        dlg=Qt.QFileDialog.getOpenFileName(self,'Open file','.')
+        print(dlg)
+        """
+
+    @pyqtSlot(int)
+    def setFilePaths(self, count):
+        if count==self.filepick.countfiles:
+            print(self.filepick.files)
+            
+        
+        
         
     def printPlot(self):
         p = QPrinter()

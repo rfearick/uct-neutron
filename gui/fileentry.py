@@ -1,4 +1,5 @@
 from pathlib import Path
+import configparser
 
 from PyQt5 import Qt, QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
@@ -9,6 +10,8 @@ from PyQt5.QtWidgets import QLineEdit
 """
 Gather the file names needed for analysis
 """
+
+scaler_names=['sc#01','sc#02','sc#03','sc#04','sc#05','sc#06']
 
 class FileField(QLineEdit):
     """
@@ -22,6 +25,7 @@ class FileField(QLineEdit):
     def __init__(self):
         super().__init__()
         self.filename=None
+        self.scalers=None
 
     def mouseDoubleClickEvent(self, event):      
         self.getFile()
@@ -47,6 +51,37 @@ class FileField(QLineEdit):
             #print("parent    :",pp.parent)
             mpapath=pp.with_suffix(".mpa")
             #print("mpafile   :",mpapath.exists())
+            scalers=self.getScalerData(mpapath)
+            print("scalers",scalers)
+            #self.scalers=scalers
+
+    def getScalerData( self, filepath ):
+        """
+        get scaler data from mpa file.
+        input:
+            filepath:  .mpapath from FileField object for run file
+        """
+        if not filepath.exists():
+            print("No mpa file exists")
+            self.scalers=None
+            return None
+        if self.scalers is not None:
+            return self.scalers
+        f=open(filepath,"r")
+        lines=['[settings]'] # config part lacks initial header
+        for l in f:
+            if "[DATA" in l:
+                break
+            lines.append(l)
+        C=configparser.ConfigParser(strict=False,inline_comment_prefixes=(';',))
+        C.read_string(''.join(lines))
+        scalers=[]
+        for i,sc in enumerate(scaler_names):
+            scdata=C.getint("MS-12 A",sc)
+            scalers.append(scdata)
+        f.close()
+        self.scalers=scalers
+        return self.scalers
 
 class FilePicker(QTabWidget):
     """

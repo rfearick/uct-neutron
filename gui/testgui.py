@@ -300,16 +300,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.changeState = 0
         self.averageState = 0
         self.autocState = 0
-
-        self.fileNa=None
-        self.fileCs=None
-        self.fileAmBe=None
-        self.fileTAC=None
-        self.fileNE213=None
-        self.fileFC=None
-        self.files=[self.fileNa,self.fileCs,self.fileAmBe,self.fileTAC,
-                   self.fileNE213,self.fileFC]
-
         self.mainwin=Qt.QSplitter(self)
         self.setGeometry(10,10,1024,768)
         self.setCentralWidget(self.mainwin)
@@ -325,7 +315,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.tasklist=Qt.QListWidget(self)
         print("2 %x"%(0x7ffffff&int(self.tasklist.windowFlags())))
         #self.taskwidget=self.tasklist
-        self.tasklist.addItems(analysis_tasks)
+        #self.tasklist.addItems(analysis_tasks)
+        self.tasklistitems={}  # keep a dict of these, may expand in future
+        for task in analysis_tasks:
+            item=Qt.QListWidgetItem(task,self.tasklist)
+            item.setFlags(item.flags()&~QtCore.Qt.ItemIsEnabled)
+            self.tasklistitems[task]=item
         self.tasklist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         self.tasklist.setWindowFlags(QtCore.Qt.WindowTitleHint)
         self.tasklist.setWindowTitle("xxx")
@@ -469,8 +464,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
         sorttype=m.text()
-        #print("enter filer",m.text())
-            
+        #print("enter filer",m.text(),p)
+        
         if sorttype=="Sort NE213":
             self.startSorting(SetupSort)
         elif sorttype=="Sort FC":
@@ -489,7 +484,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             ploticon=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")
             self.calibplot=calibrator.CalibrationPlotter(self.calib)
             self.calibplot.insertPlot(tree, ploticon)
-            self.calibplot.plot_all_spectra()
+            self.calibplot.plot_all_spectra() 
+        
         """
         dlg=Qt.QFileDialog.getOpenFileName(self,'Open file','.')
         print(dlg)
@@ -499,10 +495,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def setFilePaths(self, count):
         if count==self.filepick.countfiles:
             print(self.filepick.files)
+        files=self.filepick.files
+        calibfiles=set(self.filepick.calibtags)
+        if calibfiles.issubset(files.keys()):
+            item=self.tasklistitems["Calibrate"]
+            print(calibfiles)
+            item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
             
-        
-        
-        
     def printPlot(self):
         p = QPrinter()
 

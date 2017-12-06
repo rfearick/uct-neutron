@@ -23,9 +23,10 @@ class FileField(QLineEdit):
     """
     currentpath=None
     valueChanged=pyqtSignal('QString',Path)
-    def __init__(self, name):
+    
+    def __init__(self, tag):
         super().__init__()
-        self.id=name
+        self.tag=tag
         self.filename=None
         self.scalers=None
 
@@ -55,7 +56,7 @@ class FileField(QLineEdit):
             #print("mpafile   :",mpapath.exists())
             scalers=self.getScalerData(mpapath)
             ##print("scalers",scalers)
-            self.valueChanged.emit(self.id,pp)
+            self.valueChanged.emit(self.tag,pp)
 
     def getScalerData( self, filepath ):
         """
@@ -117,14 +118,14 @@ class FilePicker(QTabWidget):
         layout=QVBoxLayout()
         hlayout=QHBoxLayout()
         hlayout.addWidget( QLabel("22Na") )
-        self.editNa=FileField("22Na")
+        self.editNa=FileField("Na")
         hlayout.addWidget( self.editNa )
         layout.addLayout( hlayout )
         self.editNa.valueChanged.connect(self.setFilePath)
         
         hlayout=QHBoxLayout()
         hlayout.addWidget( QLabel("137Cs") )
-        self.editCs=FileField("137Cs")
+        self.editCs=FileField("Cs")
         hlayout.addWidget( self.editCs )
         layout.addLayout( hlayout )
         self.editCs.valueChanged.connect(self.setFilePath)
@@ -145,6 +146,7 @@ class FilePicker(QTabWidget):
 
         self.calibfiles.setLayout(layout)
         self.addTab( self.calibfiles, "Calibration" )
+        self.calibtags=("Na","Cs","AmBe","TAC")
 
     def _makeNE213Tab(self):
         layout=QVBoxLayout()
@@ -161,7 +163,7 @@ class FilePicker(QTabWidget):
         layout=QVBoxLayout()
         hlayout=QHBoxLayout()
         hlayout.addWidget( QLabel("Fission") )
-        self.editFC=FileField("Fission")
+        self.editFC=FileField("FC")
         hlayout.addWidget( self.editFC )
         layout.addLayout( hlayout )
         self.editFC.valueChanged.connect(self.setFilePath)

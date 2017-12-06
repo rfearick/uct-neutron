@@ -425,7 +425,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         self.plotdock.setWidget(self.listview)
                                   
-        self.tasklist.doubleClicked.connect(self.filer)
+        self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.valueChanged.connect(self.setFilePaths)
         self.bthread = None
 
@@ -460,7 +460,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         print("cleanup")
         self.bthread.quit()
 
-    def filer(self,p):
+    def runTask(self,p):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
         sorttype=m.text()
@@ -487,6 +487,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.calibplot.plot_all_spectra() 
         
         """
+    def filer(self,p):
         dlg=Qt.QFileDialog.getOpenFileName(self,'Open file','.')
         print(dlg)
         """
@@ -500,6 +501,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         if calibfiles.issubset(files.keys()):
             item=self.tasklistitems["Calibrate"]
             print(calibfiles)
+            item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
+        if analysis_tasks[1] in files.keys:
+            item=self.tasklistitems[analysis_tasks[1]]
+            item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
+        if analysis_tasks[2] in files.keys:
+            item=self.tasklistitems[analysis_tasks[2]]
             item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
             
     def printPlot(self):

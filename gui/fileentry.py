@@ -58,6 +58,26 @@ class FileField(QLineEdit):
             ##print("scalers",scalers)
             self.valueChanged.emit(self.tag,pp)
 
+    def setFile(self,filename):
+        pp=Path(filename)
+        if pp.exists():
+            self.filename=filename
+            self.path=pp
+            self.name=pp.name
+            self.stem=pp.stem
+            self.parentpath=pp.parent
+            if FileField.currentpath is None or FileField.currentpath != self.parentpath:
+                FileField.currentpath=pp.parent           
+            self.setText(pp.name)
+            #print("input file:",filename)
+            #print("parent    :",pp.parent)
+            mpapath=pp.with_suffix(".mpa")
+            #print("mpafile   :",mpapath.exists())
+            scalers=self.getScalerData(mpapath)
+            ##print("scalers",scalers)
+            self.valueChanged.emit(self.tag,pp)
+        
+
     def getScalerData( self, filepath ):
         """
         get scaler data from mpa file.
@@ -98,11 +118,7 @@ class FilePicker(QTabWidget):
         self.calibfiles = QWidget()
         self.ne213files = QWidget()
         self.fcfiles    = QWidget()
-
-        self._makeCalibTab()
-        self._makeNE213Tab()
-        self._makeFCTab()
-
+        
         self.editNa=None
         self.editCs=None
         self.editAmBe=None
@@ -112,6 +128,10 @@ class FilePicker(QTabWidget):
         self.countfiles=6 # number of files to get
 
         self.files={}
+        
+        self._makeCalibTab()
+        self._makeNE213Tab()
+        self._makeFCTab()
         
     def _makeCalibTab(self):
 
@@ -179,6 +199,17 @@ class FilePicker(QTabWidget):
         self.files[ident]=pathname
         #print(self.files)
         self.valueChanged.emit(len(self.files)) # notify if file count changed
+
+    def setFiles(self, files):
+        #self.files=files
+        print(self.editNa)
+        self.editNa.setFile(files['Na'])
+        self.editCs.setFile(files['Cs'])
+        self.editAmBe.setFile(files['AmBe'])
+        self.editTAC.setFile(files['TAC'])
+        self.editNE213.setFile(files['NE213'])
+        self.editFC.setFile(files['FC'])
+        
         
         
 

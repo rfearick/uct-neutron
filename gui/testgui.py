@@ -34,6 +34,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector
+import configparser
 plt.ion()       # turn on interactive mode of matplotlib
 
 import icons    # part of this package -- toolbar icons
@@ -427,6 +428,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                                   
         self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.valueChanged.connect(self.setFilePaths)
+        self.btnFreeze.clicked.connect(self.filer)
         self.bthread = None
 
     def startSorting(self, setupsorter):
@@ -486,11 +488,18 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.calibplot.insertPlot(tree, ploticon)
             self.calibplot.plot_all_spectra() 
         
-        """
+    
     def filer(self,p):
-        dlg=Qt.QFileDialog.getOpenFileName(self,'Open file','.')
-        print(dlg)
-        """
+        filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',
+                                                  '.',"Experiment (*.exp)")
+        C=configparser.ConfigParser(strict=False,inline_comment_prefixes=(';',))
+        C.optionxform=lambda option: option
+        C.read(filename)
+        files=C.items("Files")
+        print(dict(files))
+        self.filepick.setFiles(dict(files))
+        
+
 
     @pyqtSlot(int)
     def setFilePaths(self, count):
@@ -502,10 +511,10 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             item=self.tasklistitems["Calibrate"]
             print(calibfiles)
             item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
-        if analysis_tasks[1] in files.keys:
+        if "NE213" in files.keys():
             item=self.tasklistitems[analysis_tasks[1]]
             item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
-        if analysis_tasks[2] in files.keys:
+        if "FC" in files.keys():
             item=self.tasklistitems[analysis_tasks[2]]
             item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
             

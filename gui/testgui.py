@@ -305,15 +305,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.setGeometry(10,10,1024,768)
         self.setCentralWidget(self.mainwin)
 
-        font=Qt.QFont("Helvetica",12,Qt.QFont.Bold)
         
         self.filewidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
         from fileentry import FilePicker
         self.filepick=FilePicker()
-        label=Qt.QLabel("Analysis Files")
-        label.setFont(font)
-        label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        label=self.makeLabel("Analysis Files")
         vlayout.addWidget(label)
         vlayout.addWidget(self.filepick)
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
@@ -330,7 +327,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             item.setFlags(item.flags()&~QtCore.Qt.ItemIsEnabled)
             self.tasklistitems[task]=item
         self.tasklist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        vlayout.addWidget(Qt.QLabel("Task list"))
+        label=self.makeLabel("Task list")
+        vlayout.addWidget(label)
         vlayout.addWidget(self.tasklist)
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.taskwidget.setLayout(vlayout)
@@ -405,7 +403,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         #self.listview.setViewMode(Qt.QListView.IconMode)
         self.listview.setModel(self.plotmodel)
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        vlayout.addWidget(Qt.QLabel("Plot list"))
+        label=self.makeLabel("Plot list")
+        vlayout.addWidget(label)
         vlayout.addWidget(self.listview)
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.plotwidget.setLayout(vlayout)
@@ -418,6 +417,20 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.filepick.valueChanged.connect(self.setFilePaths)
         self.btnFreeze.clicked.connect(self.filer)
         self.bthread = None
+
+    def makeLabel(self, title):
+        """
+        centralize label creation here so all customisation in one place
+        """
+        font=Qt.QFont("Helvetica",12,Qt.QFont.Bold)
+        label=Qt.QLabel(title)
+        label.setFont(font)
+        label.setMargin(6)
+        label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        label.setFrameStyle(Qt.QFrame.StyledPanel|Qt.QFrame.Raised)
+        label.setContentsMargins(1,2,1,2)
+        return label
+        
 
     def startSorting(self, setupsorter):
         """

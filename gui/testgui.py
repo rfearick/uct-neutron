@@ -146,7 +146,7 @@ class SpectrumPlot(Qt.QObject):
         """
         cease updating plot when sorting done
         """
-        print('fig',self.fig, ' end update')
+        #print('fig',self.fig, ' end update')
         self.unsorted=False
         self.timer.stop()
 
@@ -156,8 +156,8 @@ class SpectrumPlot(Qt.QObject):
         stop timer when window closed
         """
         self.timer.stop()
-        print('figs ',plt.get_fignums())
-        print("Window closed ",'thread',self.parent().bthread.isRunning(),'timer',self.timer.isActive())
+        #print('figs ',plt.get_fignums())
+        #print("Window closed ",'thread',self.parent().bthread.isRunning(),'timer',self.timer.isActive())
 
 class SpectrumItemModel(Qt.QStandardItemModel):
     def __init__(self, parent):
@@ -285,10 +285,10 @@ class BackgroundSort(Qt.QObject):
         """
         start the sort task; emit signal when done to release background thread
         """
-        logger.info("start task")
+        logger.info("start sorting task")
         # task.start() ?
         sortadc=self.sorter.sort()
-        logger.info("end task")
+        logger.info("end sorting task")
         self.finished.emit()     
         # sort returns histogram data of adc distribution -- do something with it
     
@@ -476,7 +476,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         if self.bthread is None:
             pass
         elif self.bthread.isRunning():
-            print("Sort already in progress")
+            logger.warn("Sort already in progress")
             return
         self.bthread=Qt.QThread()
         S=setupsorter(self)
@@ -488,32 +488,27 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
         # start sort
         self.bthread.start()
-        print('thread',self.bthread.isRunning())
+        #print('thread',self.bthread.isRunning())
 
     @pyqtSlot()
     def cleanupThread(self):
         """
         quit background thread when sorting done
         """
-        print("cleanup")
+        #print("cleanup")
         self.bthread.quit()
 
     def runTask(self,p):
         # placeholder...
         m=self.tasklist.itemFromIndex(p)
         sorttype=m.text()
-        #print("enter filer",m.text(),p)
-        
+        logger.info("Run task: "+sorttype)
         if sorttype=="Sort NE213":
             self.startSorting(SetupSort)
         elif sorttype=="Sort FC":
             self.startSorting(SetupFCSort)
         elif sorttype=="Calibrate":
             import calibrate as calibrator
-            #self.calib=calibrator.Calibrator(calibrator.infileNa,
-            #                                 calibrator.infileCs,
-            #                                 calibrator.infileAmBe,
-            #                                 calibrator.infileTAC)
             self.calib=calibrator.Calibrator(self.filepick.files['Na'],
                                              self.filepick.files['Cs'],
                                              self.filepick.files['AmBe'],
@@ -546,13 +541,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     @pyqtSlot(int)
     def setFilePaths(self, count):
-        if count==self.filepick.countfiles:
-            print(self.filepick.files)
+        #if count==self.filepick.countfiles:
+        #    print(self.filepick.files)
         files=self.filepick.files
         calibfiles=set(self.filepick.calibtags)
         if calibfiles.issubset(files.keys()):
             item=self.tasklistitems["Calibrate"]
-            print(calibfiles)
+            #print(calibfiles)
             item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
         if "NE213" in files.keys():
             item=self.tasklistitems[analysis_tasks[1]]

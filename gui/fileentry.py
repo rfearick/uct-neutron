@@ -7,6 +7,8 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt5.QtWidgets import QLineEdit
 
+import logging
+
 """
 Gather the file names needed for analysis
 """
@@ -38,7 +40,7 @@ class FileField(QLineEdit):
         directory=str(directory)
         #print("directory", directory)
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',directory,"List files (*.lst)")
-        print(filename)
+        #print(filename)
         if filename == '': return
         pp=Path(filename)
         if pp.exists():
@@ -85,7 +87,9 @@ class FileField(QLineEdit):
             filepath:  .mpapath from FileField object for run file
         """
         if not filepath.exists():
-            print("No mpa file exists")
+            #print("No mpa file exists")
+            logger=logging.getLogger("neutrons")
+            logger.warn("No mpa file exists: "+filepath.name)
             self.scalers=None
             return None
         if self.scalers is not None:
@@ -210,7 +214,7 @@ class FilePicker(QTabWidget):
 
     def setFiles(self, files):
         #self.files=files
-        print(self.editNa)
+        #print(self.editNa)
         self.editNa.setFile(files['Na'])
         self.editCs.setFile(files['Cs'])
         self.editAmBe.setFile(files['AmBe'])

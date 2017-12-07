@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import MultiCursor
 from scipy.stats import linregress
-
+import logging
 """
 Calibrate neutron detector using gamma ray sources.
 
@@ -169,6 +169,10 @@ class Calibrator(object):
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
         print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)",tacintercept)
+        logger=logging.getLogger("neutrons")
+        logger.info('mean peak spacing in TAC spectrum=%4.1f'%( diff,))
+        logger.info('TAC calibration=%5.2f %s'%(diff/taccalstep," ch/ns (for 20 ns tac calibrator)"))
+        logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
         self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
         return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 

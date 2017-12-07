@@ -329,6 +329,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.logwin=Qt.QListWidget(self)
         vlayout=Qt.QVBoxLayout()
         vlayout.addWidget(self.mainwin)
+        label=self.makeLabel("Analysis log")
+        vlayout.addWidget(label)
         vlayout.addWidget(self.logwin)
         self.setGeometry(10,10,1024,768)
         #self.setCentralWidget(self.mainwin)
@@ -391,14 +393,15 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.btnPrint.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         toolBar.addWidget(self.btnPrint)
 
-        """
+        
         self.btnMode = Qt.QToolButton(toolBar)
-        self.btnMode.setText("fft")
-        self.btnMode.setIcon(Qt.QIcon(Qt.QPixmap(icons.pwspec)))
-        self.btnMode.setCheckable(True)
+        self.btnMode.setText("Save expt")
+        self.btnMode.setIcon(self.style().standardIcon(Qt.QStyle.SP_DriveFDIcon))
+        #self.btnMode.setCheckable(True)
         self.btnMode.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         toolBar.addWidget(self.btnMode)
-
+        
+        """
         self.btnAvge = Qt.QToolButton(toolBar)
         self.btnAvge.setText("average")
         self.btnAvge.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
@@ -450,7 +453,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                                   
         self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.valueChanged.connect(self.setFilePaths)
-        self.btnFreeze.clicked.connect(self.filer)
+        self.btnFreeze.clicked.connect(self.openFile)
+        self.btnMode.clicked.connect(self.saveFile)
         self.bthread = None
 
     def makeLabel(self, title):
@@ -513,6 +517,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                                              self.filepick.files['Cs'],
                                              self.filepick.files['AmBe'],
                                              self.filepick.files['TAC'])
+            logger.info("Start sort for calibration")
             self.calib.sort()
             # create tree for plots widget
             model=self.plotmodel
@@ -524,7 +529,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.calibplot.plot_all_spectra() 
         
     
-    def filer(self,p):
+    def openFile(self,p):
+        print('p',p)
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',
                                                   '.',"Experiment (*.exp)")
         if filename == '': return
@@ -535,9 +541,27 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         #print(dict(files))
         self.filepick.setFiles(dict(files))
         logger.info("Open file "+filename)
-        #logger.flush()
-        
 
+    def saveFile(self,p):
+        if self.filepick.files is None:
+            logger.warn("Nothing to save")
+            return
+        filename,_=Qt.QFileDialog.getSaveFileName(self,'Save file',
+                                                  '.',"Experiment (*.exp)")
+        if filename == '': return
+        C=configparser.ConfigParser(strict=False,inline_comment_prefixes=(';',))
+        C.optionxform=lambda option: option
+        filedict={}
+        filedict['Files']=self.filepick.files
+        fd=filedict['Files']
+        for key in fd:
+            fd[key]=str(fd[key])
+        C.read_dict(filedict)
+        # future: ask on existing file !
+        f=open(filename,"w")
+        C.write(f)
+        f.close()
+        logger.info("Write file: "+filename)
 
     @pyqtSlot(int)
     def setFilePaths(self, count):

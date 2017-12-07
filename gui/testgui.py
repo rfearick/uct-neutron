@@ -35,6 +35,13 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector
 import configparser
+import logging
+
+#logging.basicConfig(level=logging.INFO)
+logger=logging.getLogger("neutrons")
+logger.propagate=False  # don't log message via root logger to console
+logger.setLevel(logging.INFO)
+
 plt.ion()       # turn on interactive mode of matplotlib
 
 import icons    # part of this package -- toolbar icons
@@ -259,10 +266,10 @@ class Task(Qt.QObject):
         """
         start the sort task; emit signal when done to release background thread
         """
-        print("start task")
+        logger.info("start task")
         # task.start() ?
         sortadc=self.task.start()
-        print("end task")
+        logger.info("end task")
         self.finished.emit()
 
 class BackgroundSort(Qt.QObject):
@@ -278,15 +285,32 @@ class BackgroundSort(Qt.QObject):
         """
         start the sort task; emit signal when done to release background thread
         """
-        print("start task")
+        logger.info("start task")
         # task.start() ?
         sortadc=self.sorter.sort()
-        print("end task")
+        logger.info("end task")
         self.finished.emit()     
         # sort returns histogram data of adc distribution -- do something with it
     
 # initial analysis tasks
 analysis_tasks=["Calibrate","Sort NE213","Sort FC"]
+
+class ListLogger(object):
+    def __init__(self, list):
+        self.list=list
+
+    def write(self,data):
+        """
+        1) must remove line feed at end
+        2) seeks to be a spurious line feed coming through as well
+        """
+        #print("loghandler:",len(data))
+        if len(data)<=1: return
+        if data[-1] in ['\r','\n']: data=data[0:-1]
+        Qt.QListWidgetItem(data,self.list)
+
+    def flush(self):
+        pass
 
 class NeutronAnalysisDemo(Qt.QMainWindow):
     """
@@ -302,9 +326,20 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.averageState = 0
         self.autocState = 0
         self.mainwin=Qt.QSplitter(self)
+        self.logwin=Qt.QListWidget(self)
+        vlayout=Qt.QVBoxLayout()
+        vlayout.addWidget(self.mainwin)
+        vlayout.addWidget(self.logwin)
         self.setGeometry(10,10,1024,768)
-        self.setCentralWidget(self.mainwin)
-
+        #self.setCentralWidget(self.mainwin)
+        w=Qt.QWidget()
+        w.setLayout(vlayout)
+        self.setCentralWidget(w)
+        logstream=ListLogger(self.logwin)
+        loghandler=logging.StreamHandler(logstream)
+        loghandler.setFormatter(logging.Formatter(fmt='%(asctime)s : %(levelname)s : %(message)s'))
+        logger.addHandler(loghandler)
+        
         
         self.filewidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
@@ -502,8 +537,10 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         C.optionxform=lambda option: option
         C.read(filename)
         files=C.items("Files")
-        print(dict(files))
+        #print(dict(files))
         self.filepick.setFiles(dict(files))
+        logger.info("Open file "+filename)
+        #logger.flush()
         
 
 

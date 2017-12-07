@@ -304,57 +304,37 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.mainwin=Qt.QSplitter(self)
         self.setGeometry(10,10,1024,768)
         self.setCentralWidget(self.mainwin)
-               
-        self.stack=Qt.QDockWidget("Tasks",self)
-        self.stack.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
 
-        ##self.tasklist=Qt.QListWidget(self.stack)
-        self.taskwidget=Qt.QWidget(None, QtCore.Qt.CustomizeWindowHint|QtCore.Qt.WindowTitleHint|QtCore.Qt.WindowSystemMenuHint|QtCore.Qt.Window|QtCore.Qt.WindowStaysOnTopHint)
-        print("1 %x"%(0x7ffffff&int(self.taskwidget.windowFlags())))
-        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()&0x7fffffff)
+        font=Qt.QFont("Helvetica",12,Qt.QFont.Bold)
+        
+        self.filewidget=Qt.QWidget()
+        vlayout=Qt.QVBoxLayout()
+        from fileentry import FilePicker
+        self.filepick=FilePicker()
+        label=Qt.QLabel("Analysis Files")
+        label.setFont(font)
+        label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        vlayout.addWidget(label)
+        vlayout.addWidget(self.filepick)
+        vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
+        self.filewidget.setLayout(vlayout)
+        self.mainwin.addWidget(self.filewidget)
+
+               
+        self.taskwidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
         self.tasklist=Qt.QListWidget(self)
-        print("2 %x"%(0x7ffffff&int(self.tasklist.windowFlags())))
-        #self.taskwidget=self.tasklist
-        #self.tasklist.addItems(analysis_tasks)
         self.tasklistitems={}  # keep a dict of these, may expand in future
         for task in analysis_tasks:
             item=Qt.QListWidgetItem(task,self.tasklist)
             item.setFlags(item.flags()&~QtCore.Qt.ItemIsEnabled)
             self.tasklistitems[task]=item
         self.tasklist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        self.tasklist.setWindowFlags(QtCore.Qt.WindowTitleHint)
-        self.tasklist.setWindowTitle("xxx")
-        print("3 %x"%(int(self.taskwidget.windowFlags())))
-        #self.stack.setWidget(self.tasklist)
-        #self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.stack)
-        #self.taskwidget.setWidget(self.tasklist)
-        #self.taskwidget.setWindowFlags((self.taskwidget.windowFlags()|QtCore.Qt.CustomizeWindowHint)^QtCore.Qt.WindowCloseButtonHint)
-        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|QtCore.Qt.CustomizeWindowHint)
-        print("4 %x"%int(self.taskwidget.windowFlags()))
-        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|QtCore.Qt.CustomizeWindowHint|QtCore.Qt.WindowTitleHint|QtCore.Qt.WindowSystemMenuHint|QtCore.Qt.Window|QtCore.Qt.WindowStaysOnTopHint)
-        #self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|(0x00000ff))
-        print("5 %x"%int(self.taskwidget.windowFlags()))
+        vlayout.addWidget(Qt.QLabel("Task list"))
         vlayout.addWidget(self.tasklist)
+        vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.taskwidget.setLayout(vlayout)
         self.mainwin.addWidget(self.taskwidget)
-        #self.taskwidget.setParent(None)
-        print("6 %x"%int(self.taskwidget.windowFlags()))
-        self.taskwidget.setWindowFlags(self.taskwidget.windowFlags()|QtCore.Qt.SubWindow)
-        print("7 %x"%int(self.taskwidget.windowFlags()))
-        self.taskwidget.show()
-        
-        self.dock=Qt.QDockWidget("Done",self)
-        from fileentry import FilePicker
-        self.filepick=FilePicker()
-        self.dock.setWidget(self.filepick)
-        """
-        self.donelist=Qt.QListWidget(self.dock)
-        self.donelist.addItems(["Done","Also"])
-        self.donelist.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        self.dock.setWidget(self.donelist)
-"""
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.dock)
  
         # example code taken from dualscopeN.py
         toolBar = Qt.QToolBar(self)
@@ -369,6 +349,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.btnFreeze.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
         self.btnFreeze.setCheckable(True)
         self.btnFreeze.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        self.btnFreeze.setToolTip("Open experiment file")
         toolBar.addWidget(self.btnFreeze)
 
         self.btnPrint = Qt.QToolButton(toolBar)
@@ -417,14 +398,21 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         """
 
         # set up a model for spectra plots
-        self.plotdock=Qt.QDockWidget("Plots",self)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
+        self.plotwidget=Qt.QWidget()
+        vlayout=Qt.QVBoxLayout()
         self.listview=Qt.QTreeView(self)
         self.plotmodel=SpectrumItemModel(self)#Qt.QStandardItemModel(self)
         #self.listview.setViewMode(Qt.QListView.IconMode)
         self.listview.setModel(self.plotmodel)
         self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
-        self.plotdock.setWidget(self.listview)
+        vlayout.addWidget(Qt.QLabel("Plot list"))
+        vlayout.addWidget(self.listview)
+        vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
+        self.plotwidget.setLayout(vlayout)
+        self.mainwin.addWidget(self.plotwidget)
+
+        
+        #self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
                                   
         self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.valueChanged.connect(self.setFilePaths)
@@ -474,10 +462,14 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.startSorting(SetupFCSort)
         elif sorttype=="Calibrate":
             import calibrate as calibrator
-            self.calib=calibrator.Calibrator(calibrator.infileNa,
-                                             calibrator.infileCs,
-                                             calibrator.infileAmBe,
-                                             calibrator.infileTAC)
+            #self.calib=calibrator.Calibrator(calibrator.infileNa,
+            #                                 calibrator.infileCs,
+            #                                 calibrator.infileAmBe,
+            #                                 calibrator.infileTAC)
+            self.calib=calibrator.Calibrator(self.filepick.files['Na'],
+                                             self.filepick.files['Cs'],
+                                             self.filepick.files['AmBe'],
+                                             self.filepick.files['TAC'])
             self.calib.sort()
             # create tree for plots widget
             model=self.plotmodel
@@ -492,6 +484,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def filer(self,p):
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',
                                                   '.',"Experiment (*.exp)")
+        if filename == '': return
         C=configparser.ConfigParser(strict=False,inline_comment_prefixes=(';',))
         C.optionxform=lambda option: option
         C.read(filename)

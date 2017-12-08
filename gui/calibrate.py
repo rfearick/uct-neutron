@@ -78,8 +78,10 @@ class Calibrator(object):
         self.hCs = None
         self.hAmBe = None
         self.hTAC = None
-        self.calibration=(None,None)
+        self.calibration={}
         self.TACcalibration=(None,None)
+        self.logger=logging.getLogger("neutrons")
+
 
     def sort( self ):
         """
@@ -101,6 +103,8 @@ class Calibrator(object):
         hCs=Histogram(ECs, ADC1+ADC2+ADC3, 'ADC1', 512, label="137Cs")
         hAmBe=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC1', 512, label='AmBe')
         hTAC=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
+        self.calibration['EADC']='ADC1'
+        self.calibration['TADC']='ADC3' # could be just TDC ...
 
         # sort data. eventually must make multistream sorter!
         SNa=Sorter(ENa, [hNa] )
@@ -168,12 +172,13 @@ class Calibrator(object):
         print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)")
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
-        print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)",tacintercept)
-        logger=logging.getLogger("neutrons")
-        logger.info('mean peak spacing in TAC spectrum=%4.1f'%( diff,))
-        logger.info('TAC calibration=%5.2f %s'%(diff/taccalstep," ch/ns (for 20 ns tac calibrator)"))
-        logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
+        print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
+        #logger=logging.getLogger("neutrons")
+        self.logger.info('mean peak spacing in TAC spectrum=%4.1f'%( diff,))
+        self.logger.info('TAC calibration=%5.2f %s'%(diff/taccalstep," ch/ns (for 20 ns tac calibrator)"))
+        self.logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
         self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
+        self.calibration['TAC']=tacslope/taccalstep
         return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 
     def calibrateGamma(self,edges,chans):
@@ -186,11 +191,15 @@ class Calibrator(object):
             slope, intercept -- channel/MeVee,channel
         """
         slope, intercept,r,p,stderr=linregress(edges,chans)
-        calibration=(slope*2,intercept*2)
-        self.calibration=calibration  #ch/MeV at 1024 ch
-        print("L calibration: slope,intercept",slope, " ch/MeV", intercept, " ch")
-        print("Calibration corrected to full event size (1024)")
-        return self.calibration
+        calibration=(slope*2,intercept*2) # convert to 1024 ch
+        calgamma=calibration
+        calibration=(calibration[0]/4,calibration[1]/4) # correct for change in gain
+        self.calibration['slope']=calibration[0]  #ch/MeV at 1024 ch
+        self.calibration['intercept']=calibration[1] # ch
+        self.logger.info("L calibration: slope,intercept",slope, " ch/MeV", intercept, " ch")
+        self.logger.info("Calibration corrected to full event size (1024)")
+        # return the calibration for the gamma spectra, with high gain setting
+        return calgamma
 
 
 class CalibrationPlotter(object):
@@ -243,13 +252,15 @@ class CalibrationPlotter(object):
         """
         Plot the three gamma spectra
         """
-        calibration=self.calibrator.calibration
+        cal=self.calibrator.calibration
         calibrated=False
-        if calibration[0] is not None and calibration[1] is not None:
+        if 'slope' in cal and 'intercept' in cal:
             divisor=self.hNa.divisor1
-            calibration=(calibration[0]/divisor,calibration[1]/divisor)
+            calibration=(cal['slope']/divisor,cal['intercept']/divisor)
             slope,intercept=calibration
             calibrated=True
+        else:
+            calibration=(None,None)
         self.f1=plt.figure("Gamma calibration",(8,8))
         self.f1.canvas.draw_idle()
         ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)

@@ -187,6 +187,9 @@ def SetupSort(parent):
     #infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
     
     infile=filepath+fileNE213
+    calibration=parent.calib.calibration
+    if len(calibration)==5:
+        print("Spectrum is calibrated")
     
     E=EventSource(infile)
 
@@ -321,6 +324,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def __init__(self, *args):
         Qt.QMainWindow.__init__(self, *args)
 
+        self.calib=None
         self.freezeState = 0
         self.changeState = 0
         self.averageState = 0
@@ -557,7 +561,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         for key in fd:
             fd[key]=str(fd[key])
         C.read_dict(filedict)
-        # future: ask on existing file !
+        # future: ask on existing file - but not needed on OSX !
         f=open(filename,"w")
         C.write(f)
         f.close()

@@ -196,7 +196,7 @@ class Calibrator(object):
         calibration=(calibration[0]/4,calibration[1]/4) # correct for change in gain
         self.calibration['slope']=calibration[0]  #ch/MeV at 1024 ch
         self.calibration['intercept']=calibration[1] # ch
-        self.logger.info("L calibration: slope,intercept",slope, " ch/MeV", intercept, " ch")
+        self.logger.info("L calibration: slope,intercept=%6.2f %s %6.2f %s"%(slope, " ch/MeV", intercept, " ch"))
         self.logger.info("Calibration corrected to full event size (1024)")
         # return the calibration for the gamma spectra, with high gain setting
         return calgamma

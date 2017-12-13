@@ -9,7 +9,7 @@ SpectrumPlot -- too many names
 SpectrumPlot -- handle start of sort/interaction with update timer
 """
 
-filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
+#filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
 
 
 import sys
@@ -73,7 +73,6 @@ class SpectrumPlot(Qt.QObject):
         self.yname=yname
         self.fig=None
         print("plot object created")
-        #parent.listview.doubleClicked.connect(self.openPlot)
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.update)
@@ -87,7 +86,6 @@ class SpectrumPlot(Qt.QObject):
         insert plot repr into list view widget
         """
         plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),self.name)
-        #self.plotmodel.appendRow(plot)
         parentitem.appendRow(plot)
         plot.setData(self)
    
@@ -97,21 +95,17 @@ class SpectrumPlot(Qt.QObject):
         plot corresponding data
         """
         from polygonlasso import MyLassoSelector
-        #plot=self.plotmodel.itemFromIndex(p)
-        #s=plot.data()
-        #if s != self: return
         h=self.histo
-        #nfig=p.row()+1
         fig=plt.figure(self.name)
         nfig=fig.number
-        print('fig',plt.get_fignums(),nfig, h.dims, self.unsorted)
+        #print('fig',plt.get_fignums(),nfig, h.dims, self.unsorted)
         self.drawPlot(h)
         fig.canvas.draw_idle()
         if self.fig is None:
             if h.dims==2:
                 ax=fig.gca()
                 self.lasso=MyLassoSelector(ax,onselect,useblit=False)
-                print("lasso")
+                #print("lasso")
         self.fig=nfig
         fig.canvas.manager.window.closing.connect(self.closed)
         if self.unsorted: self.timer.start()
@@ -148,14 +142,14 @@ class SpectrumPlot(Qt.QObject):
             plt.xlabel(xl+' '+self.xname)
             plt.ylabel(yl+' '+self.yname)
 
-    def _getCalibratedScale(self, adc, h, xl,size):
+    def _getCalibratedScale(self, adc, h, xl, size):
             x=None
             calib=self.parent().calib
             if calib is not None:
                 calib=self.parent().calib.calibration
                 try:
                     # must compensate for histo size
-                    factor=h.divisor1
+                    factor=1024//size  # -> divisor
                     if adc==calib['EADC']:
                         m=calib['slope']/factor
                         c=calib['intercept']/factor
@@ -197,8 +191,6 @@ class SpectrumPlot(Qt.QObject):
         stop timer when window closed
         """
         self.timer.stop()
-        #print('figs ',plt.get_fignums())
-        #print("Window closed ",'thread',self.parent().bthread.isRunning(),'timer',self.timer.isActive())
 
 class SpectrumItemModel(Qt.QStandardItemModel):
     def __init__(self, parent):
@@ -332,7 +324,6 @@ class BackgroundSort(Qt.QObject):
         start the sort task; emit signal when done to release background thread
         """
         logger.info("start sorting task")
-        # task.start() ?
         sortadc=self.sorter.sort()
         logger.info("end sorting task")
         self.finished.emit()     
@@ -350,7 +341,6 @@ class ListLogger(object):
         1) must remove line feed at end
         2) seeks to be a spurious line feed coming through as well
         """
-        #print("loghandler:",len(data))
         if len(data)<=1: return
         if data[-1] in ['\r','\n']: data=data[0:-1]
         Qt.QListWidgetItem(data,self.list)
@@ -427,27 +417,25 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         sb.showMessage("Status=1")
 
         self.btnFreeze = Qt.QToolButton(toolBar)
-        self.btnFreeze.setText("Button1")
+        self.btnFreeze.setText("Open expt")
         self.btnFreeze.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
         self.btnFreeze.setCheckable(True)
         self.btnFreeze.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         self.btnFreeze.setToolTip("Open experiment file")
         toolBar.addWidget(self.btnFreeze)
-
+        
+        self.btnMode = Qt.QToolButton(toolBar)
+        self.btnMode.setText("Save expt")
+        self.btnMode.setIcon(self.style().standardIcon(Qt.QStyle.SP_DriveFDIcon))
+        self.btnMode.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        toolBar.addWidget(self.btnMode)
+        
         self.btnPrint = Qt.QToolButton(toolBar)
         self.btnPrint.setText("Print")
         self.btnPrint.setIcon(Qt.QIcon(Qt.QPixmap(icons.print_xpm)))
         self.btnPrint.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         toolBar.addWidget(self.btnPrint)
 
-        
-        self.btnMode = Qt.QToolButton(toolBar)
-        self.btnMode.setText("Save expt")
-        self.btnMode.setIcon(self.style().standardIcon(Qt.QStyle.SP_DriveFDIcon))
-        #self.btnMode.setCheckable(True)
-        self.btnMode.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
-        toolBar.addWidget(self.btnMode)
-        
         """
         self.btnAvge = Qt.QToolButton(toolBar)
         self.btnAvge.setText("average")
@@ -494,8 +482,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.plotwidget.setLayout(vlayout)
         self.mainwin.addWidget(self.plotwidget)
-        
-        #self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
                                   
         self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.valueChanged.connect(self.setFilePaths)
@@ -609,8 +595,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     @pyqtSlot(int)
     def setFilePaths(self, count):
-        #if count==self.filepick.countfiles:
-        #    print(self.filepick.files)
         files=self.filepick.files
         calibfiles=set(self.filepick.calibtags)
         if calibfiles.issubset(files.keys()):

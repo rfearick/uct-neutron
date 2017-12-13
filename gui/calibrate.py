@@ -256,7 +256,7 @@ class CalibrationPlotter(object):
         calibrated=False
         if 'slope' in cal and 'intercept' in cal:
             divisor=self.hNa.divisor1
-            calibration=(cal['slope']/divisor,cal['intercept']/divisor)
+            calibration=(cal['slope']*divisor,cal['intercept']*divisor)
             slope,intercept=calibration
             calibrated=True
         else:

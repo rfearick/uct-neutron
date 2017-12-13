@@ -121,15 +121,56 @@ class SpectrumPlot(Qt.QObject):
         draw the plot on matplotlib canvas
         """
         if h.dims==1:
+            adc=h.adc1
             data,yl,xl=h.get_plotdata()
-            plt.plot(data,drawstyle='steps-mid')
-            plt.ylabel(yl+' '+self.yname)
-            plt.xlabel(self.xname)
+            x,xl=self._getCalibratedScale(adc,h,xl,h.size1) ##xl->self.xname?
+            if x is None:
+                plt.plot(data,drawstyle='steps-mid')
+                plt.ylabel(yl+' '+self.yname)
+                plt.xlabel(self.xname)
+            else:
+                plt.plot(x,data,drawstyle='steps-mid')
+                plt.ylabel(yl+' '+self.yname)
+                plt.xlabel(xl)
+                
         else:
-            data,yl,xl=h.get_plotlabels()
-            plt.imshow(data,origin='lower',vmax=2000)
-            plt.xlabel(yl+' '+self.xname)
-            plt.ylabel(xl+' '+self.yname)
+            adc1=h.adc1
+            adc2=h.adc2
+            data,xl,yl=h.get_plotlabels()
+            x,xl=self._getCalibratedScale(adc1,h,xl,h.size1)
+            y,yl=self._getCalibratedScale(adc2,h,yl,h.size2)
+            if x is None: x=[0,h.size1]
+            if y is None: y=[0,h.size2]
+            plt.imshow(data,origin='lower',vmax=2000,
+                       extent=[x[0],x[-1],y[0],y[-1]],
+                       aspect='auto')
+            ax=plt.gca()
+            plt.xlabel(xl+' '+self.xname)
+            plt.ylabel(yl+' '+self.yname)
+
+    def _getCalibratedScale(self, adc, h, xl,size):
+            x=None
+            calib=self.parent().calib
+            if calib is not None:
+                calib=self.parent().calib.calibration
+                try:
+                    # must compensate for histo size
+                    factor=h.divisor1
+                    if adc==calib['EADC']:
+                        m=calib['slope']/factor
+                        c=calib['intercept']/factor
+                        x=np.arange(0.0,float(size),1.0)
+                        x=(1.0/m)*x-c/m
+                        xl="Energy [MeVee]"
+                    elif adc==calib['TADC']:
+                        m=calib['TAC']/factor
+                        x=np.arange(0.0,float(size),1.0)
+                        x=x/m
+                        xl="T [ns]"              
+                except:
+                        x=np.arange(0.0,float(size),1.0)
+            return x, xl
+        
     
     @pyqtSlot()
     def update(self):
@@ -171,7 +212,8 @@ class SpectrumItemModel(Qt.QStandardItemModel):
         """
         plot=self.parent.plotmodel.itemFromIndex(p)
         s=plot.data()
-        s.openPlot()
+        if s is not None:
+            s.openPlot()
                 
 def SetupSort(parent):
     """
@@ -187,9 +229,10 @@ def SetupSort(parent):
     #infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
     
     infile=filepath+fileNE213
-    calibration=parent.calib.calibration
-    if len(calibration)==5:
-        print("Spectrum is calibrated")
+    if parent.calib is not None:
+        calibration=parent.calib.calibration
+        if len(calibration)==5:
+            print("Spectrum is calibrated")
     
     E=EventSource(infile)
 

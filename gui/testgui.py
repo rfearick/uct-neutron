@@ -494,7 +494,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.plotwidget.setLayout(vlayout)
         self.mainwin.addWidget(self.plotwidget)
-
         
         #self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.plotdock)
                                   
@@ -577,7 +576,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
     
     def openFile(self,p):
-        print('p',p)
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',
                                                   '.',"Experiment (*.exp)")
         if filename == '': return
@@ -585,7 +583,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         C.optionxform=lambda option: option
         C.read(filename)
         files=C.items("Files")
-        #print(dict(files))
         self.filepick.setFiles(dict(files))
         logger.info("Open file "+filename)
 

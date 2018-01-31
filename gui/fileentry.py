@@ -110,6 +110,46 @@ class FileField(QLineEdit):
         self.scalers=scalers
         return self.scalers
 
+class DataField(QLineEdit):
+    """
+    Subclass the QLineEdit to repurpose it for data field duty.
+    This allows us to set a tag for ID
+
+    """
+    currentpath=None
+    valueChanged=pyqtSignal('QString',Path)
+    
+    def __init__(self, tag):
+        super().__init__()
+        self.tag=tag
+        self.data=None
+
+    def getFile(self):
+        directory=FileField.currentpath if FileField.currentpath is not None else '.'
+        directory=str(directory)
+        #print("directory", directory)
+        filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',directory,"List files (*.lst)")
+        #print(filename)
+        if filename == '': return
+        pp=Path(filename)
+        if pp.exists():
+            self.filename=filename
+            self.path=pp
+            self.name=pp.name
+            self.stem=pp.stem
+            self.parentpath=pp.parent
+            if FileField.currentpath is None or FileField.currentpath != self.parentpath:
+                FileField.currentpath=pp.parent           
+            self.setText(pp.name)
+            #print("input file:",filename)
+            #print("parent    :",pp.parent)
+            mpapath=pp.with_suffix(".mpa")
+            #print("mpafile   :",mpapath.exists())
+            scalers=self.getScalerData(mpapath)
+            ##print("scalers",scalers)
+            self.valueChanged.emit(self.tag,pp)
+
+
 class FilePicker(QTabWidget):
     """
     Create a tabbed widget with file entry points for calibration, ne213 and fc
@@ -128,6 +168,8 @@ class FilePicker(QTabWidget):
         self.editAmBe=None
         self.editTAC=None
         self.editNE213=None
+        self.editDefTOF=None # define time of flight spectrum
+        self.editT0=None     # for gamma flash from target to define T0
         self.editFC=None
         self.countfiles=6 # number of files to get
 
@@ -187,6 +229,23 @@ class FilePicker(QTabWidget):
         #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editNE213.valueChanged.connect(self.setFilePath)
+
+        layout.addWidget( QLabel("NE213:TOF channel") )
+        self.editDefTOF=DataField("NE213")
+        layout.addWidget( self.editDefTOF )
+        self.editDefTOF.setText("ADC3")
+        #layout.addLayout( hlayout )
+        layout.addStretch(1)
+        #self.editDefTOF.valueChanged.connect(self.setFilePath)
+
+        layout.addWidget( QLabel("NE213:T0 [ns]") )
+        self.editT0=DataField("NE213")
+        layout.addWidget( self.editT0 )
+        self.editT0.setText("0")
+        #layout.addLayout( hlayout )
+        layout.addStretch(1)
+        #self.editT0.valueChanged.connect(self.setFilePath)
+        
         self.ne213files.setLayout(layout)
         self.addTab( self.ne213files, "NE213" )
         

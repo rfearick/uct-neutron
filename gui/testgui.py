@@ -219,12 +219,26 @@ def SetupSort(parent):
     #fileNE213="NE213_028.lst"  # 16deg natLi
     #fileNE213="NE213_029.lst"  # 16deg 12C 
     #infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
+
+    filepicker=parent.filepick
     
-    infile=filepath+fileNE213
+    #infile=filepath+fileNE213
+    infile=filepicker.files['NE213']
+    print(infile)
     if parent.calib is not None:
         calibration=parent.calib.calibration
         if len(calibration)==5:
             print("Spectrum is calibrated")
+
+    TOFadc=filepicker.editDefTOF.text()
+    print("ADC for TOF is "+TOFadc)
+    TOFT0=filepicker.editT0.text()
+    try:
+        T0=float(TOFT0)
+    except:
+        print("T0 error")
+        T0=0.0
+    print("TOF T0 is ",T0)
     
     E=EventSource(infile)
 

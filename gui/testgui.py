@@ -213,12 +213,11 @@ def SetupSort(parent):
     This is hardwired here.
     At some point this will change; there should be some sort builder program.
     """
-    filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
-    fileNE213="NE213_025.lst"  # 0deg natLi
+    #filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
+    #fileNE213="NE213_025.lst"  # 0deg natLi
     #fileNE213="NE213_026.lst"  # 0deg 12C 
     #fileNE213="NE213_028.lst"  # 16deg natLi
     #fileNE213="NE213_029.lst"  # 16deg 12C 
-    #infile="../../NE213 100 MeV data/NE213_010_100MeV_0deg.lst"
 
     filepicker=parent.filepick
     
@@ -307,10 +306,9 @@ def SetupFCSort(parent):
     This is hardwired here.
     At some point this will change; there should be some sort builder program.
     """
-    filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/FC/"
-    fileNE213="FC_035.lst"  # 0deg natLi
-
-    infile=filepath+fileNE213
+    filepicker=parent.filepick
+    
+    infile=filepicker.files['FC']
     
     E=EventSource(infile)
  

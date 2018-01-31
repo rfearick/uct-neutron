@@ -273,6 +273,34 @@ def SetupSort(parent):
     t0=time.perf_counter()
     """
 
+def SortCallback(v0,v1,v2,v3,cutL):
+    """
+    Callback from sorter to perform calculated sorting
+    i.e. use calibrated spectrum to calculate data to sort
+    taken from sort-with-calib.py
+    """
+    Tof=T0-v2+rand()-0.5   # calculate TOF and spread randomly over channel
+    if v0<cutL: return
+    h3t.increment([0,0,int(Tof),0])
+    # if Tof too small to be n, ignore rest
+    if v2>Tgamma2: return
+
+    # calculate neutron energy from relativistic kinematics
+    betan=Tcon/Tof
+    if betan>= 1.0:
+        print("sqrt",v2,betan,Tof)
+        return
+    En=939.565*(1.0/np.sqrt(1.0-betan*betan)-1.0)
+    En=int(En*4+0.5)&1023
+    
+    #print(Tof,vn,En,int(Tof))
+    #h1cut.increment(v)
+    #h2cut.increment(v)
+    hE.increment([0,0,En,0])
+    #h3.increment(v)
+    hv.increment([0,0,int(betan*1000.0+0.5),0])
+
+
 def SetupFCSort(parent):
     """
     Setup a sort of fission chamber data

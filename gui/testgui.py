@@ -67,18 +67,18 @@ class SpectrumPlot(Qt.QObject):
     h     :    histogram to plot
     tree  :    StardardItemModel row into which plot is inserted in TreeView
     name  :    name given to histogram
-    xname :    label for x axis
-    yname :    label for y axis
+    xname :    label for x axis -- default to None
+    yname :    label for y axis -- default to None
     """
-    def __init__( self, parent, h, tree, name, xname, yname  ):
+    def __init__( self, parent, h, tree, name, xname=None, yname=None  ):
         super().__init__(parent=parent)
         self.plotmodel=parent.plotmodel
         self.histo=h
         self.unsorted=True
         self.tree=tree
         self.name=name
-        self.xname=xname
-        self.yname=yname
+        self.xname=xname if xname is not None else "channel"
+        self.yname=yname if yname is not None else "counts per channel"
         self.fig=None
         print("plot object created")
         self.timer=Qt.QTimer()
@@ -264,10 +264,10 @@ def SetupSort(parent):
     model.appendRow(tree)
 
     # create plot items 
-    s1=SpectrumPlot( parent, h1, tree, "NE213 Adc 1", "channel", "counts per channel")
-    s2=SpectrumPlot( parent, h2, tree, "NE213 Adc 2", "channel", "counts per channel")
-    s3=SpectrumPlot( parent, h3, tree, "NE213 Adc 3", "channel", "counts per channel")
-    s4=SpectrumPlot( parent, h4, tree, "NE213 Adc 4", "channel", "counts per channel")
+    s1=SpectrumPlot( parent, h1, tree, "NE213 Adc 1")
+    s2=SpectrumPlot( parent, h2, tree, "NE213 Adc 2")
+    s3=SpectrumPlot( parent, h3, tree, "NE213 Adc 3")
+    s4=SpectrumPlot( parent, h4, tree, "NE213 Adc 4")
     s21=SpectrumPlot( parent, h21, tree, "NE213 Adc1 v Adc2", "Long", "Short")
     s13=SpectrumPlot( parent, h13, tree, "NE213 Adc1 v Adc3", "Long", "TOF")
 
@@ -332,9 +332,9 @@ def SetupFCSort(parent):
     tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
     model.appendRow(tree)
     # create plot items
-    s1=SpectrumPlot( parent, h1, tree, "FC Adc 1", "channel", "counts per channel")
-    s3=SpectrumPlot( parent, h3, tree, "FC Adc 3", "channel", "counts per channel")
-    s4=SpectrumPlot( parent, h4, tree, "FC Adc 4", "channel", "counts per channel")
+    s1=SpectrumPlot( parent, h1, tree, "FC Adc 1")
+    s3=SpectrumPlot( parent, h3, tree, "FC Adc 3")
+    s4=SpectrumPlot( parent, h4, tree, "FC Adc 4")
     s13=SpectrumPlot( parent, h13, tree, "FC Adc1 v Adc3", "Long", "TOF")
 
     return S

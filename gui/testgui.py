@@ -16,6 +16,8 @@ import sys
 sys.path.append("..") # for eventlist.py
 from eventlist import Histogram, Sorter, EventSource
 from eventlist import EventFlags
+
+#simplify event flags
 TIMER   =EventFlags.TIMER
 PAD     =EventFlags.PAD
 RTC     =EventFlags.RTC
@@ -25,6 +27,12 @@ ADC1=EventFlags.ADC1
 ADC2=EventFlags.ADC2
 ADC3=EventFlags.ADC3
 ADC4=EventFlags.ADC4
+
+# event groups
+GROUP_NE213=ADC1+ADC2+ADC3
+GROUP_MONITOR=ADC4
+GROUP_FC=ADC1+ADC3
+
 
 from PyQt5 import Qt, QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
@@ -47,7 +55,7 @@ plt.ion()       # turn on interactive mode of matplotlib
 import icons    # part of this package -- toolbar icons
 import time
 
-count=0
+#count=0
 
 def onselect(verts):
     print(verts)
@@ -94,7 +102,6 @@ class SpectrumPlot(Qt.QObject):
         handle double click signal from listview
         plot corresponding data
         """
-        from polygonlasso import MyLassoSelector
         h=self.histo
         fig=plt.figure(self.name)
         nfig=fig.number
@@ -103,6 +110,7 @@ class SpectrumPlot(Qt.QObject):
         fig.canvas.draw_idle()
         if self.fig is None:
             if h.dims==2:
+                from polygonlasso import MyLassoSelector
                 ax=fig.gca()
                 self.lasso=MyLassoSelector(ax,onselect,useblit=False)
                 #print("lasso")
@@ -241,12 +249,12 @@ def SetupSort(parent):
     
     E=EventSource(infile)
 
-    h1=Histogram(E, ADC1+ADC2+ADC3, 'ADC1', 512)
-    h2=Histogram(E, ADC1+ADC2+ADC3, 'ADC2', 512)
-    h3=Histogram(E, ADC1+ADC2+ADC3, 'ADC3', 512)
-    h4=Histogram(E, ADC4, 'ADC4', 512)
-    h21=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
-    h13=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC3'), (256,256),label=('L','T'))
+    h1=Histogram(E, GROUP_NE213, 'ADC1', 512)
+    h2=Histogram(E, GROUP_NE213, 'ADC2', 512)
+    h3=Histogram(E, GROUP_NE213, 'ADC3', 512)
+    h4=Histogram(E, GROUP_MONITOR, 'ADC4', 512)
+    h21=Histogram(E, GROUP_NE213, ('ADC1','ADC2'), (256,256),label=('L','S'))
+    h13=Histogram(E, GROUP_NE213, ('ADC1','ADC3'), (256,256),label=('L','T'))
     histlist=[h1,h2,h3,h4,h21,h13]
     S=Sorter( E, histlist)
 
@@ -312,10 +320,10 @@ def SetupFCSort(parent):
     
     E=EventSource(infile)
  
-    h1=Histogram(E, ADC1+ADC3, 'ADC1', 512)
-    h3=Histogram(E, ADC1+ADC3, 'ADC3', 512)
-    h4=Histogram(E, ADC4, 'ADC4', 512)
-    h13=Histogram(E, ADC1+ADC3, ('ADC1','ADC3'), (256,256),label=('L','T'))
+    h1=Histogram(E, GROUP_FC, 'ADC1', 512)
+    h3=Histogram(E, GROUP_FC, 'ADC3', 512)
+    h4=Histogram(E, GROUP_MONITOR, 'ADC4', 512)
+    h13=Histogram(E, GROUP_FC, ('ADC1','ADC3'), (256,256),label=('L','T'))
     histlist=[h1,h3,h4,h13]
     S=Sorter( E, histlist)
 

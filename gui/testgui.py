@@ -63,6 +63,7 @@ def onselect(verts):
 class SpectrumPlot(Qt.QObject):
     """
     define a spectrum plot
+    (really VC part of MVC for spectrum plots)
     parent:    main window; defines the plot model we use
     h     :    histogram to plot
     tree  :    StardardItemModel row into which plot is inserted in TreeView
@@ -201,6 +202,9 @@ class SpectrumPlot(Qt.QObject):
         self.timer.stop()
 
 class SpectrumItemModel(Qt.QStandardItemModel):
+    """
+    M(odel) of MVC for spectrum plots 
+    """
     def __init__(self, parent):
         super().__init__(parent=parent)
         parent.listview.doubleClicked.connect(self.openPlot)
@@ -232,11 +236,14 @@ def SetupSort(parent):
     #infile=filepath+fileNE213
     infile=filepicker.files['NE213']
     print(infile)
+
+    # check if spectrum calibrated
     if parent.calib is not None:
         calibration=parent.calib.calibration
         if len(calibration)==5:
             print("Spectrum is calibrated")
 
+    # check if TOF start position calculated
     TOFadc=filepicker.editDefTOF.text()
     print("ADC for TOF is "+TOFadc)
     TOFT0=filepicker.editT0.text()
@@ -246,9 +253,11 @@ def SetupSort(parent):
         print("T0 error")
         T0=0.0
     print("TOF T0 is ",T0)
-    
-    E=EventSource(infile)
 
+    # set up event source
+    E=EventSource(infile)
+    
+    # define histograms
     h1=Histogram(E, GROUP_NE213, 'ADC1', 512)
     h2=Histogram(E, GROUP_NE213, 'ADC2', 512)
     h3=Histogram(E, GROUP_NE213, 'ADC3', 512)
@@ -256,6 +265,8 @@ def SetupSort(parent):
     h21=Histogram(E, GROUP_NE213, ('ADC1','ADC2'), (256,256),label=('L','S'))
     h13=Histogram(E, GROUP_NE213, ('ADC1','ADC3'), (256,256),label=('L','T'))
     histlist=[h1,h2,h3,h4,h21,h13]
+
+    # define sort process
     S=Sorter( E, histlist)
 
     # create tree for plots widget
@@ -317,20 +328,25 @@ def SetupFCSort(parent):
     filepicker=parent.filepick
     
     infile=filepicker.files['FC']
-    
+
+    # define event source
     E=EventSource(infile)
- 
+
+    # set up histograms
     h1=Histogram(E, GROUP_FC, 'ADC1', 512)
     h3=Histogram(E, GROUP_FC, 'ADC3', 512)
     h4=Histogram(E, GROUP_MONITOR, 'ADC4', 512)
     h13=Histogram(E, GROUP_FC, ('ADC1','ADC3'), (256,256),label=('L','T'))
     histlist=[h1,h3,h4,h13]
+
+    # define sort task
     S=Sorter( E, histlist)
 
     # create tree for plots widget
     model=parent.plotmodel
     tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
     model.appendRow(tree)
+    
     # create plot items
     s1=SpectrumPlot( parent, h1, tree, "FC Adc 1")
     s3=SpectrumPlot( parent, h3, tree, "FC Adc 3")

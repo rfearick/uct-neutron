@@ -117,13 +117,22 @@ class DataField(QLineEdit):
 
     """
     currentpath=None
-    valueChanged=pyqtSignal('QString',Path)
+    valueChanged=pyqtSignal('QString','QString')
     
     def __init__(self, tag):
         super().__init__()
         self.tag=tag
         self.data=None
+        self.editingFinished.connect(self.sendData)
 
+    def sendData( self ):
+        data=self.text()
+        #try:
+        #    data=float(data)
+        #except:
+        #    data=0.0
+        self.valueChanged.emit(self.tag,data)
+                    
     def getFile(self):
         directory=FileField.currentpath if FileField.currentpath is not None else '.'
         directory=str(directory)
@@ -155,7 +164,8 @@ class FilePicker(QTabWidget):
     Create a tabbed widget with file entry points for calibration, ne213 and fc
     Accumulate file names in dict self.files.
     """
-    valueChanged=pyqtSignal(int)
+    valueChanged=pyqtSignal('QString')
+    fileChanged=pyqtSignal(int)
     def __init__(self):
 
         super().__init__()
@@ -241,10 +251,10 @@ class FilePicker(QTabWidget):
         layout.addWidget( QLabel("NE213:T0 [ns]") )
         self.editT0=DataField("NE213")
         layout.addWidget( self.editT0 )
-        self.editT0.setText("0")
+        self.editT0.setText("0.0")
         #layout.addLayout( hlayout )
         layout.addStretch(1)
-        #self.editT0.valueChanged.connect(self.setFilePath)
+        self.editT0.valueChanged.connect(self.setCalibData)
         
         self.ne213files.setLayout(layout)
         self.addTab( self.ne213files, "NE213" )
@@ -269,7 +279,7 @@ class FilePicker(QTabWidget):
         #print(ident,pathname)
         self.files[ident]=pathname
         #print(self.files)
-        self.valueChanged.emit(len(self.files)) # notify if file count changed
+        self.fileChanged.emit(len(self.files)) # notify if file count changed
 
     def setFiles(self, files):
         #self.files=files
@@ -280,7 +290,18 @@ class FilePicker(QTabWidget):
         self.editTAC.setFile(files['TAC'])
         self.editNE213.setFile(files['NE213'])
         self.editFC.setFile(files['FC'])
-        
+
+    @pyqtSlot('QString','QString')
+    def setCalibData(self, ident, data):
+        """
+        set data from entry field.
+        """
+        print(ident,data)
+        #self.files[ident]=pathname
+        #print(self.files)
+        print(type(data))
+        self.valueChanged.emit(str(data)) # notify if file count changed
+
         
         
 

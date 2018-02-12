@@ -153,25 +153,25 @@ class SpectrumPlot(Qt.QObject):
 
     def _getCalibratedScale(self, adc, h, xl, size):
             x=None
-            calib=self.parent().calib
-            if calib is not None:
-                calib=self.parent().calib.calibration
-                try:
-                    # must compensate for histo size
-                    factor=1024//size  # -> divisor
-                    if adc==calib['EADC']:
-                        m=calib['slope']/factor
-                        c=calib['intercept']/factor
-                        x=np.arange(0.0,float(size),1.0)
-                        x=(1.0/m)*x-c/m
-                        xl="Energy [MeVee]"
-                    elif adc==calib['TADC']:
-                        m=calib['TAC']/factor
-                        x=np.arange(0.0,float(size),1.0)
-                        x=x/m
-                        xl="T [ns]"              
-                except:
-                        x=np.arange(0.0,float(size),1.0)
+            if 'NE213' not in self.tree.text():
+                return x,xl
+            calib=self.parent().calibration
+            try:
+                # must compensate for histo size
+                factor=1024//size  # -> divisor
+                if adc==calib['EADC']:
+                    m=calib['slope']/factor
+                    c=calib['intercept']/factor
+                    x=np.arange(0.0,float(size),1.0)
+                    x=(1.0/m)*x-c/m
+                    xl="Energy [MeVee]"
+                elif adc==calib['TADC']:
+                    m=calib['TAC']/factor
+                    x=np.arange(0.0,float(size),1.0)
+                    x=x/m
+                    xl="T [ns]"              
+            except:
+                    x=np.arange(0.0,float(size),1.0)
             return x, xl
         
     
@@ -238,12 +238,12 @@ def SetupSort(parent):
     print(infile)
 
     # check if spectrum calibrated
-    if parent.calib is not None:
-        calibration=parent.calib.calibration
-        if len(calibration)==5:
-            print("Spectrum is calibrated")
+    calibration=parent.calibration
+    if len(calibration)==6:
+        print("Spectrum is calibrated")
 
     # check if TOF start position calculated
+    """
     TOFadc=filepicker.editDefTOF.text()
     print("ADC for TOF is "+TOFadc)
     TOFT0=filepicker.editT0.text()
@@ -252,6 +252,9 @@ def SetupSort(parent):
     except:
         print("T0 error")
         T0=0.0
+    """
+    T0=calibration['T0']
+    TOFStartSet=T0 != 0.0
     print("TOF T0 is ",T0)
 
     # set up event source
@@ -421,7 +424,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def __init__(self, *args):
         Qt.QMainWindow.__init__(self, *args)
 
-        self.calib=None
+        self.calibrator=None
+        self.calibration={}
+        self.calibration['T0']=0.0
         self.freezeState = 0
         self.changeState = 0
         self.averageState = 0
@@ -548,6 +553,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.mainwin.addWidget(self.plotwidget)
                                   
         self.tasklist.doubleClicked.connect(self.runTask)
+        self.filepick.fileChanged.connect(self.setFilePaths)
         self.filepick.valueChanged.connect(self.setFilePaths)
         self.btnFreeze.clicked.connect(self.openFile)
         self.btnMode.clicked.connect(self.saveFile)
@@ -604,25 +610,30 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         sorttype=m.text()
         logger.info("Run task: "+sorttype)
         if sorttype=="Sort NE213":
+            self.updateCalibration()
             self.startSorting(SetupSort)
         elif sorttype=="Sort FC":
             self.startSorting(SetupFCSort)
         elif sorttype=="Calibrate":
             import calibrate as calibrator
-            self.calib=calibrator.Calibrator(self.filepick.files['Na'],
+            self.calibrator=calibrator.Calibrator(self.filepick.files['Na'],
                                              self.filepick.files['Cs'],
                                              self.filepick.files['AmBe'],
                                              self.filepick.files['TAC'])
             logger.info("Start sort for calibration")
-            self.calib.sort()
+            self.calibrator.sort()
             # create tree for plots widget
             model=self.plotmodel
             tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Calibration")
             model.appendRow(tree)
             ploticon=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")
-            self.calibplot=calibrator.CalibrationPlotter(self.calib)
+            self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
             self.calibplot.insertPlot(tree, ploticon)
-            self.calibplot.plot_all_spectra() 
+            self.calibplot.plot_all_spectra()
+
+    def updateCalibration(self):
+        if self.calibrator is not None:
+            self.calibration.update(self.calibrator.calibration)
         
     
     def openFile(self,p):
@@ -657,20 +668,31 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         f.close()
         logger.info("Write file: "+filename)
 
+    @pyqtSlot('QString')
     @pyqtSlot(int)
     def setFilePaths(self, count):
-        files=self.filepick.files
-        calibfiles=set(self.filepick.calibtags)
-        if calibfiles.issubset(files.keys()):
-            item=self.tasklistitems["Calibrate"]
-            #print(calibfiles)
-            item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
-        if "NE213" in files.keys():
-            item=self.tasklistitems[analysis_tasks[1]]
-            item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
-        if "FC" in files.keys():
-            item=self.tasklistitems[analysis_tasks[2]]
-            item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
+        if isinstance(count, int):
+            print("filepaths int",count)
+            files=self.filepick.files
+            calibfiles=set(self.filepick.calibtags)
+            if calibfiles.issubset(files.keys()):
+                item=self.tasklistitems["Calibrate"]
+                #print(calibfiles)
+                item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
+            if "NE213" in files.keys():
+                item=self.tasklistitems[analysis_tasks[1]]
+                item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
+            if "FC" in files.keys():
+                item=self.tasklistitems[analysis_tasks[2]]
+                item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
+        elif isinstance(count, str):
+            print("filepaths float",count)
+            print("T0 from field",count)
+            try:
+                self.calibration['T0']=float(count)
+            except:
+                logger.error("T0 is not a float")
+        
             
     def printPlot(self):
         p = QPrinter()

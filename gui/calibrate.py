@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import MultiCursor
 from scipy.stats import linregress
 import logging
+
 """
 Calibrate neutron detector using gamma ray sources.
 
@@ -36,6 +37,7 @@ to select the calibration points. When all calibration points are selected, the
 calibration is calculated via linear regression, and plotted in a 4th view.
 """
 
+"""
 # use 3 calibration runs for demo, for 3 sources.
 infileCs="../NE213 100 MeV data/NE213_019_137Cs.lst"
 infileNa="../NE213 100 MeV data/NE213_017_22Na.lst"
@@ -47,6 +49,7 @@ infileCs=filepath+fileCs
 infileNa=filepath+fileNa
 infileAmBe=filepath+fileAmBe
 infileTAC=filepath+fileTAC
+"""
 
 # calibration data
 chans=[None,None,None,None]
@@ -68,6 +71,7 @@ class Calibrator(object):
     input:
         infileNa, infileCs, infileAmBe, infileTAC: 
             file paths to respective list files
+    The calibration data is kept in a dict
     """
     def __init__( self, infileNa, infileCs, infileAmBe, infileTAC):
         self.infileNa = infileNa
@@ -99,12 +103,16 @@ class Calibrator(object):
         GAmBe=EAmBe.eventstream()
         GTAC=ETAC.eventstream()
 
+        # define histograms
         hNa=Histogram(ENa, ADC1+ADC2+ADC3, 'ADC1', 512, label="22Na")
         hCs=Histogram(ECs, ADC1+ADC2+ADC3, 'ADC1', 512, label="137Cs")
         hAmBe=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC1', 512, label='AmBe')
         hTAC=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
+
+        # set calibration channels
         self.calibration['EADC']='ADC1'
         self.calibration['TADC']='ADC3' # could be just TDC ...
+        #if 'T0' not in self.calibration.keys(): self.calibration['T0']=0.0
 
         # sort data. eventually must make multistream sorter!
         SNa=Sorter(ENa, [hNa] )

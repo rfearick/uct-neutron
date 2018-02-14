@@ -703,7 +703,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             print("filepaths float",count)
             print("Tgamma from field",count)
             try:
-                self.calibration['Tgamma']=float(count)
+                Tg=float(count)
+                self.calibration['Tgamma']=Tg
+                if 'TAC' in self.calibration.keys():
+                    Tcon=9.159/0.3  # in ns
+                    T0=Tg+Tcon
+                    print("Tcon, T0=",Tcon,T0)
+                    self.calibration['T0']=T0
             except:
                 logger.error("Tgamma is not a float")
         

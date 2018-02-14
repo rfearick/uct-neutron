@@ -336,6 +336,7 @@ class Sorter(object):
         self.gatelist = gatelist
         self._groups=[]
         self._hists=[]
+        self.moresort=None
         for h in histlist:
             if h.coincidencegroup in self._groups:
                 i=self._groups.index(h.coincidencegroup)
@@ -381,6 +382,7 @@ class Sorter(object):
                         histlist=self._hists[i]
                         for h in histlist:
                             h.increment(v)
+                    if self.moresort is not None: self.moresort(a,v)
                 else:
                     nunknown1+=1
             else:

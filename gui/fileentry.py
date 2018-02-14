@@ -179,7 +179,7 @@ class FilePicker(QTabWidget):
         self.editTAC=None
         self.editNE213=None
         self.editDefTOF=None # define time of flight spectrum
-        self.editT0=None     # for gamma flash from target to define T0
+        self.editTgamma=None     # for gamma flash from target to define Tgamma
         self.editFC=None
         self.countfiles=6 # number of files to get
 
@@ -248,13 +248,13 @@ class FilePicker(QTabWidget):
         layout.addStretch(1)
         #self.editDefTOF.valueChanged.connect(self.setFilePath)
 
-        layout.addWidget( QLabel("NE213:T0 [ns]") )
-        self.editT0=DataField("NE213")
-        layout.addWidget( self.editT0 )
-        self.editT0.setText("0.0")
+        layout.addWidget( QLabel("NE213:Tgamma [ns]") )
+        self.editTgamma=DataField("NE213")
+        layout.addWidget( self.editTgamma )
+        self.editTgamma.setText("0.0")
         #layout.addLayout( hlayout )
         layout.addStretch(1)
-        self.editT0.valueChanged.connect(self.setCalibData)
+        self.editTgamma.valueChanged.connect(self.setCalibData)
         
         self.ne213files.setLayout(layout)
         self.addTab( self.ne213files, "NE213" )

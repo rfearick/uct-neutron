@@ -246,16 +246,16 @@ def SetupSort(parent):
     """
     TOFadc=filepicker.editDefTOF.text()
     print("ADC for TOF is "+TOFadc)
-    TOFT0=filepicker.editT0.text()
+    TOFTgamma=filepicker.editTgamma.text()
     try:
-        T0=float(TOFT0)
+        Tgamma=float(TOFTgamma)
     except:
-        print("T0 error")
-        T0=0.0
+        print("Tgamma error")
+        Tgamma=0.0
     """
-    T0=calibration['T0']
-    TOFStartSet=T0 != 0.0
-    print("TOF T0 is ",T0)
+    Tgamma=calibration['Tgamma']
+    TOFStartSet=Tgamma != 0.0
+    print("TOF Tgamma is ",Tgamma)
 
     # set up event source
     E=EventSource(infile)
@@ -300,6 +300,8 @@ def SortCallback(v0,v1,v2,v3,cutL):
     i.e. use calibrated spectrum to calculate data to sort
     taken from sort-with-calib.py
     """
+    Tcon=9.159*calTof/0.3
+    T0=Tgamma+Tcon
     Tof=T0-v2+rand()-0.5   # calculate TOF and spread randomly over channel
     if v0<cutL: return
     h3t.increment([0,0,int(Tof),0])
@@ -426,7 +428,19 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
         self.calibrator=None
         self.calibration={}
-        self.calibration['T0']=0.0
+        """
+        calibration values:
+        Only the NE213 spectra are calibrated.
+        Calibration is stored in a dict()
+        The following keys are known:
+        'EADC':      adc used for calibrating energy
+        'TADC':      adc used for calibrating TOF
+        'slope':     gamma calibration slope in channel/MeVee
+        'intercept': gamma calibration intercept in channel
+        'TAC':       TDC slope in ch/ns
+        'Tgamma':    Time of gamma burst in raw TOF, used to calc T0 
+        """
+        self.calibration['Tgamma']=0.0
         self.freezeState = 0
         self.changeState = 0
         self.averageState = 0
@@ -687,11 +701,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                 item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
         elif isinstance(count, str):
             print("filepaths float",count)
-            print("T0 from field",count)
+            print("Tgamma from field",count)
             try:
-                self.calibration['T0']=float(count)
+                self.calibration['Tgamma']=float(count)
             except:
-                logger.error("T0 is not a float")
+                logger.error("Tgamma is not a float")
         
             
     def printPlot(self):

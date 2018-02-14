@@ -2,6 +2,7 @@ import numpy as np
 import io
 import configparser
 from enum import IntEnum
+import time
 
 class EventFlags(IntEnum):
     """
@@ -321,7 +322,6 @@ class Histogram(object):
         else:
             return self.data, self.label1, self.label2
 
-
 class Sorter(object):
     """
     Sort an eventstream into histograms
@@ -360,6 +360,7 @@ class Sorter(object):
         nunknown2=0
         nadc=[0,0,0,0]
         sortadc=[]
+        t0=time.perf_counter()
         for t,n,a,v in eventstream:
             #print(t,n,a,v)
             if t == TIMER:
@@ -386,6 +387,8 @@ class Sorter(object):
                 nunknown2+=1
                 print("huh?")
 
+        t1=time.perf_counter()
+        print("Sort: elapsed time ",t1-t0, " s")
         print("Timer",ntimer)
         print("Events",nevent)
         print("RTC",nrtc)

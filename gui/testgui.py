@@ -50,6 +50,8 @@ logger=logging.getLogger("neutrons")
 logger.propagate=False  # don't log message via root logger to console
 logger.setLevel(logging.INFO)
 
+from analysisdata import Calibration, AnalysisData
+
 plt.ion()       # turn on interactive mode of matplotlib
 
 import icons    # part of this package -- toolbar icons
@@ -155,6 +157,7 @@ class SpectrumPlot(Qt.QObject):
             x=None
             if 'NE213' not in self.tree.text():
                 return x,xl
+            calib=Calibration()
             calib=self.parent().calibration
             try:
                 # must compensate for histo size
@@ -238,6 +241,7 @@ def SetupSort(parent):
     print(infile)
 
     # check if spectrum calibrated
+    calibration=Calibration()
     calibration=parent.calibration
     if len(calibration)==6:
         print("Spectrum is calibrated")
@@ -327,6 +331,9 @@ class CalculatedEventSort(object):
 
     def __init__( self, calibration ):
 
+        
+        calibration=Calibration()
+        self.analysisdata=AnalysisData()
         speed_of_light=0.3 # m/ns
         target_distance=9.159 # m , flight path target to detector
         slopeTof=calibration['TAC'] # TAC calibration in channel/ns
@@ -465,6 +472,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         Qt.QMainWindow.__init__(self, *args)
 
         self.calibrator=None
+        self.calibration=Calibration()
+        self.calibration.Tgamma=0.0
         self.calibration={}
         """
         calibration values:
@@ -682,6 +691,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
             self.calibplot.insertPlot(tree, ploticon)
             self.calibplot.plot_all_spectra()
+
 
     def updateCalibration(self):
         if self.calibrator is not None:

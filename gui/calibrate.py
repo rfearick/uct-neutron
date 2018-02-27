@@ -18,6 +18,8 @@ from matplotlib.widgets import MultiCursor
 from scipy.stats import linregress
 import logging
 
+from analysisdata import Calibration, AnalysisData
+
 """
 Calibrate neutron detector using gamma ray sources.
 
@@ -83,6 +85,7 @@ class Calibrator(object):
         self.hAmBe = None
         self.hTAC = None
         self.calibration={}
+        self.calibx=Calibration()
         self.TACcalibration=(None,None)
         self.logger=logging.getLogger("neutrons")
 
@@ -112,6 +115,8 @@ class Calibrator(object):
         # set calibration channels
         self.calibration['EADC']='ADC1'
         self.calibration['TADC']='ADC3' # could be just TDC ...
+        self.calibx.EADC='ADC1'
+        self.calibx.TADC='ADC3'
         #if 'T0' not in self.calibration.keys(): self.calibration['T0']=0.0
 
         # sort data. eventually must make multistream sorter!
@@ -187,6 +192,7 @@ class Calibrator(object):
         self.logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
         self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
         self.calibration['TAC']=tacslope/taccalstep
+        self.calibx.TAC=tacslope/taccalstep
         return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 
     def calibrateGamma(self,edges,chans):
@@ -204,7 +210,9 @@ class Calibrator(object):
         calibration=(calibration[0]/4,calibration[1]/4) # correct for change in gain
         self.calibration['slope']=calibration[0]  #ch/MeV at 1024 ch
         self.calibration['intercept']=calibration[1] # ch
-        self.logger.info("L calibration: slope,intercept=%6.2f %s %6.2f %s"%(slope, " ch/MeV", intercept, " ch"))
+        self.calibx.slope=calibration[0]  #ch/MeV at 1024 ch
+        self.calibx.intercept=calibration[1] # ch
+        self.logger.info("L calibration: slope,intercept=%6.2f %s %6.2f %s"%(calibration[0], " ch/MeV", calibration[1], " ch"))
         self.logger.info("Calibration corrected to full event size (1024)")
         # return the calibration for the gamma spectra, with high gain setting
         return calgamma

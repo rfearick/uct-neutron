@@ -323,6 +323,44 @@ def SortCallback(v0,v1,v2,v3,cutL):
     #h3.increment(v)
     hv.increment([0,0,int(betan*1000.0+0.5),0])
 
+class CalculatedEventSort(object):
+
+    def __init__( self, calibration ):
+
+        speed_of_light=0.3 # m/ns
+        target_distance=9.159 # m , flight path target to detector
+        slopeTof=calibration['TAC'] # TAC calibration in channel/ns
+        choffset=target_distance*slopeTof/speed_of_light # channel offset due to flight path
+        chT0=calibration['Tgamma']*slopeTof + choffset # channel of gamma flash at detector
+        self.chT0=T0 # keep copy
+        self.choffset=choffset
+        self.chTgamma2=self.chT0-5 # arbitrary cutoff
+        self.cutL=2.5 # convert to channel
+
+    def sort(v0,v1,v2,v3):
+        
+        Tof=chT0-v2+rand()-0.5   # calculate TOF and spread randomly over channel
+        if v0<self.cutL: return
+        h3t.increment([0,0,int(Tof),0])
+        # if Tof too small to be n, ignore rest
+        if v2>self.chTgamma2: return
+
+        # calculate neutron energy from relativistic kinematics
+        betan=choffset/Tof
+        if betan>= 1.0:
+            print("sqrt",v2,betan,Tof)
+            return
+        En=939.565*(1.0/np.sqrt(1.0-betan*betan)-1.0)
+        En=int(En*4+0.5)&1023
+
+        #print(Tof,vn,En,int(Tof))
+        #h1cut.increment(v)
+        #h2cut.increment(v)
+        hE.increment([0,0,En,0])
+        #h3.increment(v)
+        hv.increment([0,0,int(betan*1000.0+0.5),0])
+        
+
 
 def SetupFCSort(parent):
     """

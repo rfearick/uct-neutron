@@ -400,6 +400,8 @@ class Sorter(object):
         print("unknown2",nunknown2)
         return sortadc
 
+    def setExtraSorter( self, sorter):
+        self.moresort=sorter
         
         
 

@@ -172,7 +172,8 @@ class Calibrator(object):
         #print(peakpos)
         peakpos=np.array(peakpos)
         N=len(peakpos)//2
-        taccalstep=20.0 #ns
+        d=AnalysisData()
+        taccalstep=d.TAC_interval # 20 ns
         diff=0.0
         # from peakpos, avoid 'method of fools'
         for i in range(N):
@@ -184,8 +185,8 @@ class Calibrator(object):
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
         print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
         #logger=logging.getLogger("neutrons")
-        self.logger.info('mean peak spacing in TAC spectrum=%4.1f'%( diff,))
-        self.logger.info('TAC calibration=%5.2f %s'%(diff/taccalstep," ch/ns (for 20 ns tac calibrator)"))
+        self.logger.info('mean peak spacing in TAC spectrum=%4.1f ch with calibrator setting %3.0f ns'%( diff,taccalstep))
+        self.logger.info('TAC calibration=%5.2f ch/ns (%3.0f ns calibrator setting)'%(diff/taccalstep,taccalstep))
         self.logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
         self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
         self.calibration.TAC=tacslope/taccalstep
@@ -203,9 +204,12 @@ class Calibrator(object):
         slope, intercept,r,p,stderr=linregress(edges,chans)
         calibration=(slope*2,intercept*2) # convert to 1024 ch
         calgamma=calibration
-        calibration=(calibration[0]/4,calibration[1]/4) # correct for change in gain
+        d=AnalysisData()
+        gain=d.calibration_gain
+        calibration=(calibration[0]/gain,calibration[1]/gain) # correct for change in gain
         self.calibration.slope=calibration[0]  #ch/MeV at 1024 ch
         self.calibration.intercept=calibration[1] # ch
+        self.logger.info("L calibration corrected for extra gain of %4.0f"%(gain,))
         self.logger.info("L calibration: slope,intercept=%6.2f %s %6.2f %s"%(calibration[0], " ch/MeV", calibration[1], " ch"))
         self.logger.info("Calibration corrected to full event size (1024)")
         # return the calibration for the gamma spectra, with high gain setting

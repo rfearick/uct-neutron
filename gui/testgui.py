@@ -9,9 +9,6 @@ SpectrumPlot -- too many names
 SpectrumPlot -- handle start of sort/interaction with update timer
 """
 
-#filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
-
-
 import sys
 sys.path.append("..") # for eventlist.py
 from eventlist import Histogram, Sorter, EventSource
@@ -52,12 +49,10 @@ logger.setLevel(logging.INFO)
 
 from analysisdata import Calibration, AnalysisData
 
-plt.ion()       # turn on interactive mode of matplotlib
-
 import icons    # part of this package -- toolbar icons
 import time
 
-#count=0
+plt.ion()       # turn on interactive mode of matplotlib
 
 def onselect(verts):
     print(verts)

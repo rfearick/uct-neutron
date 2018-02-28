@@ -33,11 +33,25 @@ class Calibration(object, metaclass=Singleton):
     TAC_interval    -- spacing in ns of peaks from TAC calibrator setting 
     """
     
-    __slots__=['EADC','TADC','slope','intercept','TAC','Tgamma','calibration_gain',
-               'TAC_interval']
+    __slots__=('EADC','TADC','slope','intercept','TAC')
 
     def __init__(self):
         pass
+
+    def checkvars(self):
+        ##return {key: getattr(self,key) for key in self.__slots__}
+        vars={}
+        for k in self.__slots__:
+            try:
+                val=getattr(self, k)
+                vars[k]=val
+            except:
+                pass
+        return vars
+
+    def keys(self):
+        vars=self.checkvars()
+        return vars.keys()
 
 class AnalysisData(object, metaclass=Singleton):
     """
@@ -49,8 +63,14 @@ class AnalysisData(object, metaclass=Singleton):
     T0_in_ch              -- channel corresponding to T0 in TOF spectrum
     """
     
-    #__slots__=['speed_of_light','target_distance','target_distance_in_ch',
-    #           'T0_in_ch' ]
+    __slots__=['speed_of_light','target_distance','target_distance_in_ch','T0',
+               'T0_in_ch','Tgamma','calibration_gain','TAC_interval' ]
     
     def __init__(self):
-        pass
+        self.setDefaults()
+
+    def setDefaults(self):
+        self.speed_of_light=0.3    # m/ns
+        self.target_distance=9.159 # m
+        self.Tgamma=0.0
+        self.T0=0.0

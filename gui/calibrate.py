@@ -84,8 +84,7 @@ class Calibrator(object):
         self.hCs = None
         self.hAmBe = None
         self.hTAC = None
-        self.calibration={}
-        self.calibx=Calibration()
+        self.calibration=Calibration()
         self.TACcalibration=(None,None)
         self.logger=logging.getLogger("neutrons")
 
@@ -113,10 +112,8 @@ class Calibrator(object):
         hTAC=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
 
         # set calibration channels
-        self.calibration['EADC']='ADC1'
-        self.calibration['TADC']='ADC3' # could be just TDC ...
-        self.calibx.EADC='ADC1'
-        self.calibx.TADC='ADC3'
+        self.calibration.EADC='ADC1'
+        self.calibration.TADC='ADC3' # could be just TDC ...
         #if 'T0' not in self.calibration.keys(): self.calibration['T0']=0.0
 
         # sort data. eventually must make multistream sorter!
@@ -191,8 +188,7 @@ class Calibrator(object):
         self.logger.info('TAC calibration=%5.2f %s'%(diff/taccalstep," ch/ns (for 20 ns tac calibrator)"))
         self.logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
         self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
-        self.calibration['TAC']=tacslope/taccalstep
-        self.calibx.TAC=tacslope/taccalstep
+        self.calibration.TAC=tacslope/taccalstep
         return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 
     def calibrateGamma(self,edges,chans):
@@ -208,10 +204,8 @@ class Calibrator(object):
         calibration=(slope*2,intercept*2) # convert to 1024 ch
         calgamma=calibration
         calibration=(calibration[0]/4,calibration[1]/4) # correct for change in gain
-        self.calibration['slope']=calibration[0]  #ch/MeV at 1024 ch
-        self.calibration['intercept']=calibration[1] # ch
-        self.calibx.slope=calibration[0]  #ch/MeV at 1024 ch
-        self.calibx.intercept=calibration[1] # ch
+        self.calibration.slope=calibration[0]  #ch/MeV at 1024 ch
+        self.calibration.intercept=calibration[1] # ch
         self.logger.info("L calibration: slope,intercept=%6.2f %s %6.2f %s"%(calibration[0], " ch/MeV", calibration[1], " ch"))
         self.logger.info("Calibration corrected to full event size (1024)")
         # return the calibration for the gamma spectra, with high gain setting
@@ -270,9 +264,9 @@ class CalibrationPlotter(object):
         """
         cal=self.calibrator.calibration
         calibrated=False
-        if 'slope' in cal and 'intercept' in cal:
+        if 'slope' in cal.keys() and 'intercept' in cal.keys():
             divisor=self.hNa.divisor1
-            calibration=(cal['slope']*divisor,cal['intercept']*divisor)
+            calibration=(cal.slope*divisor,cal.intercept*divisor)
             slope,intercept=calibration
             calibrated=True
         else:

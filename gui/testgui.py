@@ -83,7 +83,8 @@ class SpectrumPlot(Qt.QObject):
         self.xname=xname if xname is not None else "channel"
         self.yname=yname if yname is not None else "counts per channel"
         self.fig=None
-        print("plot object created")
+        self.calibration=Calibration()
+        #print("plot object created")
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.update)
@@ -157,19 +158,18 @@ class SpectrumPlot(Qt.QObject):
             x=None
             if 'NE213' not in self.tree.text():
                 return x,xl
-            calib=Calibration()
-            calib=self.parent().calibration
+            calib=self.calibration
             try:
                 # must compensate for histo size
                 factor=1024//size  # -> divisor
-                if adc==calib['EADC']:
-                    m=calib['slope']/factor
-                    c=calib['intercept']/factor
+                if adc==calib.EADC:
+                    m=calib.slope/factor
+                    c=calib.intercept/factor
                     x=np.arange(0.0,float(size),1.0)
                     x=(1.0/m)*x-c/m
                     xl="Energy [MeVee]"
-                elif adc==calib['TADC']:
-                    m=calib['TAC']/factor
+                elif adc==calib.TADC:
+                    m=calib.TAC/factor
                     x=np.arange(0.0,float(size),1.0)
                     x=x/m
                     xl="T [ns]"              
@@ -242,9 +242,10 @@ def SetupSort(parent):
 
     # check if spectrum calibrated
     calibration=Calibration()
-    calibration=parent.calibration
-    if len(calibration)==6:
+    if(len(calibration.checkvars())==5):
         print("Spectrum is calibrated")
+
+    analysisdata=AnalysisData()
 
     # check if TOF start position calculated
     """
@@ -257,7 +258,7 @@ def SetupSort(parent):
         print("Tgamma error")
         Tgamma=0.0
     """
-    Tgamma=calibration['Tgamma']
+    Tgamma=analysisdata.Tgamma
     TOFStartSet=Tgamma != 0.0
     print("TOF Tgamma is ",Tgamma)
 
@@ -333,12 +334,13 @@ class CalculatedEventSort(object):
 
         
         calibration=Calibration()
-        self.analysisdata=AnalysisData()
-        speed_of_light=0.3 # m/ns
-        target_distance=9.159 # m , flight path target to detector
-        slopeTof=calibration['TAC'] # TAC calibration in channel/ns
+        data=AnalysisData()
+        self.analysisdata=data
+        speed_of_lightdata.speed_of_light # m/ns
+        target_distance=data.target_distance # m , flight path target to detector
+        slopeTof=calibration.TAC # TAC calibration in channel/ns
         choffset=target_distance*slopeTof/speed_of_light # channel offset due to flight path
-        chT0=calibration['Tgamma']*slopeTof + choffset # channel of gamma flash at detector
+        chT0=self.analysisdata.Tgamma*slopeTof + choffset # channel of gamma flash at detector
         self.chT0=T0 # keep copy
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
@@ -346,7 +348,7 @@ class CalculatedEventSort(object):
 
     def sort(v0,v1,v2,v3):
         
-        Tof=chT0-v2+rand()-0.5   # calculate TOF and spread randomly over channel
+        Tof=self.chT0-v2+rand()-0.5   # calculate TOF and spread randomly over channel
         if v0<self.cutL: return
         h3t.increment([0,0,int(Tof),0])
         # if Tof too small to be n, ignore rest
@@ -366,8 +368,6 @@ class CalculatedEventSort(object):
         hE.increment([0,0,En,0])
         #h3.increment(v)
         hv.increment([0,0,int(betan*1000.0+0.5),0])
-        
-
 
 def SetupFCSort(parent):
     """
@@ -453,7 +453,7 @@ class ListLogger(object):
     def write(self,data):
         """
         1) must remove line feed at end
-        2) seeks to be a spurious line feed coming through as well
+        2) seems to be a spurious line feed coming through as well
         """
         if len(data)<=1: return
         if data[-1] in ['\r','\n']: data=data[0:-1]
@@ -473,8 +473,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
         self.calibrator=None
         self.calibration=Calibration()
-        self.calibration.Tgamma=0.0
-        self.calibration={}
+        d=AnalysisData()
+        d.Tgamma=0.0
         """
         calibration values:
         Only the NE213 spectra are calibrated.
@@ -487,7 +487,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         'TAC':       TDC slope in ch/ns
         'Tgamma':    Time of gamma burst in raw TOF, used to calc T0 
         """
-        self.calibration['Tgamma']=0.0
         self.freezeState = 0
         self.changeState = 0
         self.averageState = 0
@@ -508,8 +507,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         loghandler=logging.StreamHandler(logstream)
         loghandler.setFormatter(logging.Formatter(fmt='%(asctime)s : %(levelname)s : %(message)s'))
         logger.addHandler(loghandler)
-        
-        
+                
         self.filewidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
         from fileentry import FilePicker
@@ -671,7 +669,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         sorttype=m.text()
         logger.info("Run task: "+sorttype)
         if sorttype=="Sort NE213":
-            self.updateCalibration()
             self.startSorting(SetupSort)
         elif sorttype=="Sort FC":
             self.startSorting(SetupFCSort)
@@ -694,6 +691,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
 
     def updateCalibration(self):
+        pass
         if self.calibrator is not None:
             self.calibration.update(self.calibrator.calibration)
         
@@ -752,12 +750,14 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             print("Tgamma from field",count)
             try:
                 Tg=float(count)
-                self.calibration['Tgamma']=Tg
+                d=AnalysisData()
+                print("d",d.Tgamma)
+                d.Tgamma=Tg
                 if 'TAC' in self.calibration.keys():
-                    Tcon=9.159/0.3  # in ns
+                    Tcon=d.target_distance/d.speed_of_light  # in ns
                     T0=Tg+Tcon
                     print("Tcon, T0=",Tcon,T0)
-                    self.calibration['T0']=T0
+                    d.T0=T0
             except:
                 logger.error("Tgamma is not a float")
         

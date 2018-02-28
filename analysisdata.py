@@ -59,7 +59,8 @@ class Calibration(object, metaclass=Singleton):
         """
         k=self.keys()
         if 'slope' in k and 'intercept' in k:
-            return intercept+slope*E
+            print( self.slope, E)
+            return self.intercept+self.slope*E
         else:
             return 0.0
         
@@ -70,7 +71,7 @@ class Calibration(object, metaclass=Singleton):
         """
         k=self.keys()
         if 'slope' in k and 'intercept' in k:
-            return (ch-intercept)/slope
+            return (ch-self.intercept)/self.slope
         else:
             return 0.0
 

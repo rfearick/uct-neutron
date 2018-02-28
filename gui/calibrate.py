@@ -267,10 +267,12 @@ class CalibrationPlotter(object):
         Plot the three gamma spectra
         """
         cal=self.calibrator.calibration
+        d=AnalysisData()
+        gain=d.calibration_gain
         calibrated=False
         if 'slope' in cal.keys() and 'intercept' in cal.keys():
             divisor=self.hNa.divisor1
-            calibration=(cal.slope*divisor,cal.intercept*divisor)
+            calibration=(cal.slope*gain/divisor,cal.intercept*gain/divisor)
             slope,intercept=calibration
             calibrated=True
         else:
@@ -337,6 +339,7 @@ class CalibrationPlotter(object):
         slope=slope/divisor
         intercept=intercept/divisor
         xt=np.linspace(0.0,5.0,100.0)
+        print("replot")
         self.ax4.cla()
         self.ax4.plot(edges,chans,'bo')
         self.ax4.plot(xt,intercept+xt*slope)
@@ -380,21 +383,41 @@ class CalibrationPlotter(object):
         """
         read position in data coords when mouse button clicked.
         put data into chan array at correct index.
-        when all 4 data points, calibrate and plot line 
+        when all 4 data points, calibrate and plot line .       
+        this also has to handle adjustment of calibration when calibrated.
+        gets tricky for AmBe.
         """
         ax=event.inaxes
+        xdata=event.xdata
+        cal=self.calibrator.calibration
+        if 'slope' in cal.keys() and 'intercept' in cal.keys():
+            # calibrated, xdata is in MeV: convert to channels
+            xdata=cal.channel(xdata) # convert to channel
+            divisor=self.hNa.divisor1
+            d=AnalysisData()
+            gain=d.calibration_gain
+            xdata=xdata*gain/divisor
+         
         if ax in self.axesgroup1:
             currentaxes=self.axesgroup1
-            chans[0]=event.xdata
+            chans[0]=xdata
         elif ax in self.axesgroup2:
             currentaxes=self.axesgroup2
-            chans[1]=event.xdata
+            chans[1]=xdata
         elif ax in self.axesgroup3:
             currentaxes=self.axesgroup3
             if chans[2]==None:
-                chans[2]=event.xdata
+                chans[2]=xdata
             elif chans[3]==None:
-                chans[3]=event.xdata
+                chans[3]=xdata
+            else:
+                # both present: adjust nearest
+                s1=abs(chans[2]-xdata)
+                s2=abs(chans[3]-xdata)
+                if s2>s1:
+                    chans[2]=xdata
+                else:
+                    chans[3]=xdata
         else:
             return
         currentaxes[0].axvline(event.xdata)

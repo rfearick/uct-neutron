@@ -240,7 +240,8 @@ def SetupSort(parent):
     if(len(calibration.checkvars())==5):
         print("Spectrum is calibrated")
 
-    analysisdata=AnalysisData()
+    cutL=2.5
+    print("cutL at 2.5 Mev in ch ",calibration.channel(2.5))
 
     # check if TOF start position calculated
     """
@@ -253,6 +254,7 @@ def SetupSort(parent):
         print("Tgamma error")
         Tgamma=0.0
     """
+    analysisdata=AnalysisData()
     Tgamma=analysisdata.Tgamma
     TOFStartSet=Tgamma != 0.0
     print("TOF Tgamma is ",Tgamma)
@@ -339,7 +341,7 @@ class CalculatedEventSort(object):
         self.chT0=T0 # keep copy
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
-        self.cutL=2.5 # convert to channel
+        self.cutL=calibration.channel(2.5) # convert to channel
 
     def sort(v0,v1,v2,v3):
         

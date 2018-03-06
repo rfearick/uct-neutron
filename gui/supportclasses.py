@@ -1,7 +1,14 @@
+"""
+=================
+supportclasses.py
+=================
+
+Support classes for building a GUI for neutron data analysis.
+
+-----
+"""
+
 import sys
-#from PyQt5 import Qt, QtCore, QtWidgets, QtGui
-#from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
-#import numpy as np
 from PyQt5 import Qt
 import icons
 
@@ -20,21 +27,19 @@ class PlotTreeModel(Qt.QStandardItemModel):
 
     Parameters
     ----------
-    parent : class instance
+    parentobject : object
         parent (in Qt sense) of instance of class.
+
 
     Attributes
     ----------
-    parent : class instance
+    parentobject : object
         Parent of instance.
-    super : class 
-        Copy of reference to superclass.
+
     """
-    def __init__(self, parent):
-        super().__init__(parent=parent)
-        #parent.listview.doubleClicked.connect(self.openPlot)
-        self.parent=parent
-        self.super=super()
+    def __init__(self, parentobject):
+        super().__init__(parent=parentobject)
+        self.parentobject=parentobject
 
     def appendGroup(self, name):
         """
@@ -50,7 +55,7 @@ class PlotTreeModel(Qt.QStandardItemModel):
         item : QStandardItem representing new group.
         """
         item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
-        self.super.appendRow(item)
+        self.appendRow(item)
         return item
 
     def appendAt(self, group, name, data):
@@ -68,7 +73,8 @@ class PlotTreeModel(Qt.QStandardItemModel):
 
         Returns
         -------
-        item : QStandardItem representing new *name*.
+        item 
+            QStandardItem representing new *name*.
         """
         item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),name)
         group.appendRow(item)
@@ -98,17 +104,18 @@ class PlotTreeView(Qt.QTreeView):
 
     Parameters
     ----------
-    parent : class instance
+    parentobject : object
         Parent (in Qt sense) of instance of class.
 
     Attributes
     ----------
-    parent : class instance
+    parentobject : object
         Parent of instance.
+
     """
-    def __init__(self, parent):
-        super().__init__(parent=parent)
-        self.parent=parent
+    def __init__(self, parentobject):
+        super().__init__(parent=parentobject)
+        self.parentobject=parentobject
         self.doubleClicked.connect(self.openPlot)
 
     def openPlot(self, index):

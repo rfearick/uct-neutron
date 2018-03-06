@@ -1,5 +1,15 @@
 """
+==========
+testgui.py
+==========
+
 Demonstration of GUI for neutron TOF analysis.
+
+Sort lst files and display histograms for NE213 and FC detectors.
+
+Also permits calibration of NE213 spectra.
+
+-----
 """
 #!/usr/bin/env python
 
@@ -774,9 +784,10 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     def printPlot(self):
         p = QPrinter()
 
-# Admire! 
-app = Qt.QApplication(sys.argv)
-demo=NeutronAnalysisDemo()
-demo.show()
-#demo.startSorting()
-sys.exit(app.exec_())
+if __name__=="__main__":        
+    # Admire! 
+    app = Qt.QApplication(sys.argv)
+    demo=NeutronAnalysisDemo()
+    demo.show()
+    #demo.startSorting()
+    sys.exit(app.exec_())

@@ -1,3 +1,6 @@
+"""
+Demonstration of GUI for neutron TOF analysis.
+"""
 #!/usr/bin/env python
 
 # working multithread pyqt5 code
@@ -47,6 +50,7 @@ logger=logging.getLogger("neutrons")
 logger.propagate=False  # don't log message via root logger to console
 logger.setLevel(logging.INFO)
 
+from supportclasses import PlotTreeModel, PlotTreeView
 from analysisdata import Calibration, AnalysisData
 
 import icons    # part of this package -- toolbar icons
@@ -57,10 +61,13 @@ plt.ion()       # turn on interactive mode of matplotlib
 def onselect(verts):
     print(verts)
 
-class SpectrumPlot(Qt.QObject):
+class SpectrumPlotter(Qt.QObject):
     """
     define a spectrum plot
-    (really VC part of MVC for spectrum plots)
+
+    Parameters
+    ----------
+
     parent:    main window; defines the plot model we use
     h     :    histogram to plot
     tree  :    StardardItemModel row into which plot is inserted in TreeView
@@ -84,21 +91,10 @@ class SpectrumPlot(Qt.QObject):
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.update)
         parent.bthread.finished.connect(self.stop_update)
-        # now insert ourself into listview
-        self.insertPlot(tree)
-
-       
-    def insertPlot(self, parentitem):
-        """
-        insert plot repr into list view widget
-        """
-        plot=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),self.name)
-        parentitem.appendRow(plot)
-        plot.setData(self)
    
     def openPlot(self):
         """
-        handle double click signal from listview
+        handle double click signal from plotview
         plot corresponding data
         """
         h=self.histo
@@ -205,7 +201,7 @@ class SpectrumItemModel(Qt.QStandardItemModel):
     """
     def __init__(self, parent):
         super().__init__(parent=parent)
-        parent.listview.doubleClicked.connect(self.openPlot)
+        parent.plotview.doubleClicked.connect(self.openPlot)
         self.parent=parent
 
     def openPlot(self,p):
@@ -275,17 +271,16 @@ def SetupSort(parent):
     S=Sorter( E, histlist)
 
     # create tree for plots widget
-    model=parent.plotmodel
-    tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"NE213 data")
-    model.appendRow(tree)
+    tree=parent.plotmodel
+    branch=tree.appendGroup( "NE213 data" )
 
     # create plot items 
-    s1=SpectrumPlot( parent, h1, tree, "NE213 Adc 1")
-    s2=SpectrumPlot( parent, h2, tree, "NE213 Adc 2")
-    s3=SpectrumPlot( parent, h3, tree, "NE213 Adc 3")
-    s4=SpectrumPlot( parent, h4, tree, "NE213 Adc 4")
-    s21=SpectrumPlot( parent, h21, tree, "NE213 Adc1 v Adc2", "Long", "Short")
-    s13=SpectrumPlot( parent, h13, tree, "NE213 Adc1 v Adc3", "Long", "TOF")
+    CreatePlot( parent, tree, branch, h1, "NE213 Adc 1" )
+    CreatePlot( parent, tree, branch, h2, "NE213 Adc 2" )
+    CreatePlot( parent, tree, branch, h3, "NE213 Adc 3" )
+    CreatePlot( parent, tree, branch, h4, "NE213 Adc 4" )
+    CreatePlot( parent, tree, branch, h21, "NE213 Adc1 v Adc2", xname="Long", yname="Short" )
+    CreatePlot( parent, tree, branch, h13, "NE213 Adc1 v Adc3", xname="Long", yname="TOF" )
 
     return S
 
@@ -296,6 +291,27 @@ def SetupSort(parent):
     t0=time.perf_counter()
     """
 
+def CreatePlot( parent, tree, branch, histo, name, xname=None, yname=None ):
+    """
+    Create a plot object and insert into plot tree.
+
+    Parameters
+    ----------
+    parent : object
+        Parent of plot, i.e. top level gui.
+    tree : PlotTreeModel
+        Tree into which plot is inserted.
+    branch : tree node
+        Branch in tree to which plot is linked.
+    histo : Histogram
+        Histogram to be plotted
+    name : str
+        Name user will see for histogram.
+    """
+    s=SpectrumPlotter( parent, histo, branch, name, xname=xname, yname=yname)
+    tree.appendAt( branch, name, s)
+    
+    
 def SortCallback(v0,v1,v2,v3,cutL):
     """
     Callback from sorter to perform calculated sorting
@@ -390,15 +406,14 @@ def SetupFCSort(parent):
     S=Sorter( E, histlist)
 
     # create tree for plots widget
-    model=parent.plotmodel
-    tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Fission chamber")
-    model.appendRow(tree)
+    tree=parent.plotmodel
+    branch=tree.appendGroup( "Fission Chamber" )
     
     # create plot items
-    s1=SpectrumPlot( parent, h1, tree, "FC Adc 1")
-    s3=SpectrumPlot( parent, h3, tree, "FC Adc 3")
-    s4=SpectrumPlot( parent, h4, tree, "FC Adc 4")
-    s13=SpectrumPlot( parent, h13, tree, "FC Adc1 v Adc3", "Long", "TOF")
+    CreatePlot( parent, tree, branch, h1, "FC Adc 1")
+    CreatePlot( parent, tree, branch, h3, "FC Adc 3")
+    CreatePlot( parent, tree, branch, h4, "FC Adc 4")
+    CreatePlot( parent, tree, branch, h13, "FC Adc1 v Adc3", xname="Long", yname="TOF")
 
     return S
 
@@ -596,14 +611,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # set up a model for spectra plots
         self.plotwidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
-        self.listview=Qt.QTreeView(self)
-        self.plotmodel=SpectrumItemModel(self)#Qt.QStandardItemModel(self)
-        #self.listview.setViewMode(Qt.QListView.IconMode)
-        self.listview.setModel(self.plotmodel)
-        self.listview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
+        self.plotview=PlotTreeView(self)
+        self.plotmodel=PlotTreeModel(self)
+        self.plotview.setModel(self.plotmodel)
+        self.plotview.setDragDropMode(Qt.QAbstractItemView.InternalMove)
         label=self.makeLabel("Plot list")
         vlayout.addWidget(label)
-        vlayout.addWidget(self.listview)
+        vlayout.addWidget(self.plotview)
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.plotwidget.setLayout(vlayout)
         self.mainwin.addWidget(self.plotwidget)
@@ -678,14 +692,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             logger.info("Start sort for calibration")
             self.calibrator.sort()
             # create tree for plots widget
-            model=self.plotmodel
-            tree=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"Calibration")
-            model.appendRow(tree)
-            ploticon=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")
+            tree=self.plotmodel
+            branch=tree.appendGroup( "Calibration" )
+            #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
             self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
-            self.calibplot.insertPlot(tree, ploticon)
-            self.calibplot.plot_all_spectra()
-
+            tree.appendAt(branch, "calib", self.calibplot)
+            self.calibplot.openPlot()
 
     def updateCalibration(self):
         pass

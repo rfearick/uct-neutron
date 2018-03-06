@@ -104,8 +104,9 @@ class SpectrumPlotter(Qt.QObject):
    
     def openPlot(self):
         """
-        handle double click signal from plotview
-        plot corresponding data
+        Called from PlotTreeView to display the plot.
+        Plots data corresponding to histogram.
+        If sorting in progress, starts a timer to update plot at intervals.
         """
         h=self.histo
         fig=plt.figure(self.name)
@@ -125,7 +126,7 @@ class SpectrumPlotter(Qt.QObject):
 
     def drawPlot(self,h):
         """
-        draw the plot on matplotlib canvas
+        Draw the plot on matplotlib canvas.
         """
         if h.dims==1:
             adc=h.adc1
@@ -156,33 +157,36 @@ class SpectrumPlotter(Qt.QObject):
             plt.ylabel(yl+' '+self.yname)
 
     def _getCalibratedScale(self, adc, h, xl, size):
-            x=None
-            if 'NE213' not in self.tree.text():
-                return x,xl
-            calib=self.calibration
-            try:
-                # must compensate for histo size
-                factor=1024//size  # -> divisor
-                if adc==calib.EADC:
-                    m=calib.slope/factor
-                    c=calib.intercept/factor
-                    x=np.arange(0.0,float(size),1.0)
-                    x=(1.0/m)*x-c/m
-                    xl="Energy [MeVee]"
-                elif adc==calib.TADC:
-                    m=calib.TAC/factor
-                    x=np.arange(0.0,float(size),1.0)
-                    x=x/m
-                    xl="T [ns]"              
-            except:
-                    x=np.arange(0.0,float(size),1.0)
-            return x, xl
+        """
+        Return a calibrated x-axis for the plot.
+        """
+        x=None
+        if 'NE213' not in self.tree.text():
+            return x,xl
+        calib=self.calibration
+        try:
+            # must compensate for histo size
+            factor=1024//size  # -> divisor
+            if adc==calib.EADC:
+                m=calib.slope/factor
+                c=calib.intercept/factor
+                x=np.arange(0.0,float(size),1.0)
+                x=(1.0/m)*x-c/m
+                xl="Energy [MeVee]"
+            elif adc==calib.TADC:
+                m=calib.TAC/factor
+                x=np.arange(0.0,float(size),1.0)
+                x=x/m
+                xl="T [ns]"              
+        except:
+                x=np.arange(0.0,float(size),1.0)
+        return x, xl
         
     
     @pyqtSlot()
     def update(self):
         """
-        update the plot if timer is active (i.e. sorting active)
+        Update the plot if timer is active (i.e. sorting active).
         """
         nfig=self.fig
         fig=plt.figure(nfig)
@@ -192,7 +196,7 @@ class SpectrumPlotter(Qt.QObject):
     @pyqtSlot()
     def stop_update(self):
         """
-        cease updating plot when sorting done
+        Stop updating plot when sorting done.
         """
         #print('fig',self.fig, ' end update')
         self.unsorted=False
@@ -201,7 +205,7 @@ class SpectrumPlotter(Qt.QObject):
     @pyqtSlot()
     def closed(self):
         """
-        stop timer when window closed
+        Stop timer when window closed.
         """
         self.timer.stop()
 
@@ -291,7 +295,7 @@ def CreatePlot( parent, tree, branch, histo, name, xname=None, yname=None ):
     Parameters
     ----------
     parent : object
-        Parent of plot, i.e. top level gui.
+        Qt parent of plot, i.e. top level gui.
     tree : PlotTreeModel
         Tree into which plot is inserted.
     branch : tree node
@@ -335,7 +339,9 @@ def SortCallback(v0,v1,v2,v3,cutL):
     hv.increment([0,0,int(betan*1000.0+0.5),0])
 
 class CalculatedEventSort(object):
-
+    """
+    Placeholder, not integrated with rest of code.
+    """
     def __init__( self, calibration ):
 
         
@@ -452,11 +458,22 @@ class BackgroundSort(Qt.QObject):
 analysis_tasks=["Calibrate","Sort NE213","Sort FC"]
 
 class ListLogger(object):
+    """
+    Stream python logger output to a QtListView.
+
+    Parameters
+    ----------
+    list : listview
+        A listview for output.
+    
+    """
     def __init__(self, list):
         self.list=list
 
     def write(self,data):
         """
+        Write data to list view.
+
         1) must remove line feed at end
         2) seems to be a spurious line feed coming through as well
         """
@@ -469,7 +486,7 @@ class ListLogger(object):
 
 class NeutronAnalysisDemo(Qt.QMainWindow):
     """
-    Application container  widget
+    Main application container  widget
 
     Handles toolbar and status.
     """
@@ -624,7 +641,16 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     def makeLabel(self, title):
         """
-        centralize label creation here so all customisation in one place
+        Centralize label creation here so all customisation in one place.
+
+        Parameters
+        ----------
+        title : str
+            Text of label.
+
+        Returns
+        -------
+            label : A Qt label.
         """
         font=Qt.QFont("Helvetica",12,Qt.QFont.Bold)
         label=Qt.QLabel(title)
@@ -638,8 +664,14 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     def startSorting(self, setupsorter):
         """
-        start a sort process
-        this will evolve to dispatch different sorts at various times
+        Start a sort process.
+
+        This will evolve to dispatch different sorts at various times.
+
+        Parameters
+        ----------
+        setupsorter: function
+            Function to set up the sort process.
         """
         # setup sort in background
         if self.bthread is None:
@@ -662,13 +694,25 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     @pyqtSlot()
     def cleanupThread(self):
         """
-        quit background thread when sorting done
+        Quit background thread when sorting done.
         """
         #print("cleanup")
         self.bthread.quit()
 
     def runTask(self,p):
-        # placeholder...
+        """
+        Placeholder...
+
+        Run an analysis task.
+
+        Should be replaced by something else when all tasks have been decided.
+
+        Parameters
+        ----------
+        p : index
+            A Qt index from task list indicating which task has been double
+            clicked.
+        """
         m=self.tasklist.itemFromIndex(p)
         sorttype=m.text()
         logger.info("Run task: "+sorttype)
@@ -699,6 +743,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
     
     def openFile(self,p):
+        """
+        Read a file name from open file dialog.
+
+        Parameters
+        ----------
+        p : ignored
+        """
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',
                                                   '.',"Experiment (*.exp)")
         if filename == '': return
@@ -710,6 +761,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         logger.info("Open file "+filename)
 
     def saveFile(self,p):
+        """
+        Save a file to file picked in save file dialog.
+
+        Parameters
+        ----------
+        p : ignored
+        """
         if self.filepick.files is None:
             logger.warn("Nothing to save")
             return
@@ -733,6 +791,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
     @pyqtSlot('QString')
     @pyqtSlot(int)
     def setFilePaths(self, count):
+        """
+        Save files entered in text entry widgets.
+        """
         if isinstance(count, int):
             print("filepaths int",count)
             files=self.filepick.files
@@ -765,6 +826,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
             
     def printPlot(self):
+        """
+        Placeholder.
+        """
         p = QPrinter()
 
 if __name__=="__main__":        

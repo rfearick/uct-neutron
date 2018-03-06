@@ -205,23 +205,6 @@ class SpectrumPlotter(Qt.QObject):
         """
         self.timer.stop()
 
-class SpectrumItemModel(Qt.QStandardItemModel):
-    """
-    M(odel) of MVC for spectrum plots 
-    """
-    def __init__(self, parent):
-        super().__init__(parent=parent)
-        parent.plotview.doubleClicked.connect(self.openPlot)
-        self.parent=parent
-
-    def openPlot(self,p):
-        """
-        Find where double-click and open the plot
-        """
-        plot=self.parent.plotmodel.itemFromIndex(p)
-        s=plot.data()
-        if s is not None:
-            s.openPlot()
                 
 def SetupSort(parent):
     """

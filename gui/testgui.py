@@ -226,16 +226,18 @@ def SetupSort(parent):
     
     #infile=filepath+fileNE213
     infile=filepicker.files['NE213']
-    print(infile)
-
+    #print(infile)
+    logger.info(infile)
     # check if spectrum calibrated
     calibration=Calibration()
     if(len(calibration.checkvars())==5):
-        print("Spectrum is calibrated")
+        #print("Spectrum is calibrated")
+        logger.info("Spectrum is calibrated")
 
     cutL=2.5
-    print("cutL at 2.5 Mev in ch ",calibration.channel(2.5))
-
+    #print("cutL at 2.5 Mev in ch ",calibration.channel(2.5))
+    logger.info("cutL at 2.5 Mev in ch %6.2f"%(calibration.channel(2.5),))
+    
     # check if TOF start position calculated
     """
     TOFadc=filepicker.editDefTOF.text()
@@ -250,8 +252,9 @@ def SetupSort(parent):
     analysisdata=AnalysisData()
     Tgamma=analysisdata.Tgamma
     TOFStartSet=Tgamma != 0.0
-    print("TOF Tgamma is ",Tgamma)
-
+    #print("TOF Tgamma is ",Tgamma)
+    logger.info("TOF Tgamma is %.2f",Tgamma)
+    
     # set up event source
     E=EventSource(infile)
     
@@ -448,9 +451,9 @@ class BackgroundSort(Qt.QObject):
         """
         start the sort task; emit signal when done to release background thread
         """
-        logger.info("start sorting task")
+        #logger.info("start sorting task")
         sortadc=self.sorter.sort()
-        logger.info("end sorting task")
+        #logger.info("end sorting task")
         self.finished.emit()     
         # sort returns histogram data of adc distribution -- do something with it
     
@@ -691,6 +694,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
         # start sort
         self.bthread.start()
+        logger.info("Start background task: "+self.sorttype)
         #print('thread',self.bthread.isRunning())
 
     @pyqtSlot()
@@ -700,6 +704,17 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         """
         #print("cleanup")
         self.bthread.quit()
+        logger.info("End background task: "+self.sorttype)
+        if self.sorttype=="Calibrate":
+            import calibrate as calibrator
+            tree=self.plotmodel
+            branch=tree.appendGroup( "Calibration" )
+            #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
+            self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
+            for h in self.calibplot.histo:
+                tree.appendAt(branch, h.label, self.calibplot)
+            self.calibplot.openPlot()
+        self.sorttype=None
 
     def runTask(self,p):
         """
@@ -717,6 +732,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         """
         m=self.tasklist.itemFromIndex(p)
         sorttype=m.text()
+        self.sorttype=sorttype
         logger.info("Run task: "+sorttype)
         if sorttype=="Sort NE213":
             self.startSorting(SetupSort)
@@ -725,19 +741,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         elif sorttype=="Calibrate":
             import calibrate as calibrator
             self.calibrator=calibrator.Calibrator(self.filepick.files['Na'],
-                                             self.filepick.files['Cs'],
-                                             self.filepick.files['AmBe'],
-                                             self.filepick.files['TAC'])
-            logger.info("Start sort for calibration")
-            self.calibrator.sort()
-            # create tree for plots widget
-            tree=self.plotmodel
-            branch=tree.appendGroup( "Calibration" )
-            #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
-            self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
-            for h in self.calibplot.histo:
-                tree.appendAt(branch, h.label, self.calibplot)
-            self.calibplot.openPlot()
+                                                  self.filepick.files['Cs'],
+                                                  self.filepick.files['AmBe'],
+                                                  self.filepick.files['TAC'])
+            def _SetupCalibSort(self):
+                return self.calibrator
+            self.startSorting(_SetupCalibSort)
 
     def updateCalibration(self):
         pass

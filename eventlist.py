@@ -97,6 +97,12 @@ class EventSource(object):
     Occasionally there seem to be 4 zero bytes following an adc event.
     This is not documented and may be some sort of bug.
     Presently they are ignored.
+
+    Parameters
+    ----------
+    infile : Path 
+        Full path to list file to be sorted.
+    
     """
     
     def __init__( self, infile ):
@@ -235,7 +241,8 @@ class Histogram(object):
     """
     Create a 1-d or 2-d histogram
 
-    Input:
+    Parameters
+    ----------
         stream:    EventStream object providing data -- needed for header info
                    which gives ADC settings
         group:     coincidence group of adcs: bitmap value indicating which
@@ -248,19 +255,22 @@ class Histogram(object):
                    i.e. numpy array is data[y,x] 
         sizetuple: Size of histo axis -- should be int power of two
                    Simililar protocol to adctuple
-        labeltuple:Labels for use in plotting
-    Returns:
+        label:     Tag to identify axes for use in plotting
+
+    Returns
+    -------
         data:      reference to data array (numpy)
         yl,xl:     adc names from histogram creation (for plot labels)
     """
     def __init__(self, stream, group, adctuple, sizetuple, label=None):
         self.coincidencegroup=group
         self.label=label
-        if label==None:
+        if label is None:
             labeltuple=adctuple
         else:
             labeltuple=label
         if isinstance(adctuple,str):  # assume it's a 1-d
+            if self.label==None: self.label=adctuple
             adctuple=(adctuple,)
             # now sizetuple, labeltuple should be an int
             sizetuple=(sizetuple,)
@@ -283,6 +293,7 @@ class Histogram(object):
             self.index1=int(adctuple[0][3])-1
             self.data=np.zeros(sizetuple[0])
         elif len(adctuple)==2:
+            if self.label is None: self.label=labeltuple[0]+"v"+labeltuple[1]
             self.dims=2
             self.adc1=adctuple[0]
             self.adc2=adctuple[1]
@@ -309,6 +320,22 @@ class Histogram(object):
             d1=self.divisor1
             d2=self.divisor2
             self.data[v[i2]//d2,v[i1]//d1]+=1.0
+
+    def increment1(self,v):
+        if self.dims==1:
+            self.data[v//self.divisor1]+=1.0
+        elif self.dims==2:
+            # Error
+            pass
+        
+    def increment2(self,v1,v2):
+        if self.dims==1:
+            # Error
+            pass
+        elif self.dims==2:
+            d1=self.divisor1
+            d2=self.divisor2
+            self.data[v2//d2,v1//d1]+=1.0
 
     def get_plotdata(self):
         if self.dims==1:

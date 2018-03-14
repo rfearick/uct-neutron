@@ -735,7 +735,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             branch=tree.appendGroup( "Calibration" )
             #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
             self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
-            tree.appendAt(branch, "calib", self.calibplot)
+            for h in self.calibplot.histo:
+                tree.appendAt(branch, h.label, self.calibplot)
             self.calibplot.openPlot()
 
     def updateCalibration(self):
@@ -802,8 +803,22 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         #    logger.warn("Nothing to save")
         #    return
         import h5py
-        def _savedata(path,sp):
-            h=sp.histo
+        def _savedata(path, sp):
+            histo=sp.histo
+            if isinstance(histo, Histogram):
+                _savehisto(path, histo)
+            elif isinstance(histo, list):
+                """
+                For calibration plots.
+                CalibrationPlotter keeps a list of histograms.
+                We must pick out the one that matches the path from the ListView.
+                """
+                for h in histo:
+                    if h.label in path:
+                        _savehisto(path, h)
+            else:
+                logger.info("saveData got an unknown item")
+        def _savehisto(path, h):
             if h.dims==1:
                 print(path+"/data")
                 dset=f.create_dataset(path+"/data",data=h.data)

@@ -227,6 +227,7 @@ class CalibrationPlotter(object):
         self.hCs = calibrator.hCs
         self.hAmBe = calibrator.hAmBe
         self.hTAC = calibrator.hTAC
+        self.histo=[self.hNa,self.hCs,self.hAmBe,self.hTAC]
   
     # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.

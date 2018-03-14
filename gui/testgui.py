@@ -586,14 +586,15 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.btnPrint.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         toolBar.addWidget(self.btnPrint)
 
-        """
+        
         self.btnAvge = Qt.QToolButton(toolBar)
-        self.btnAvge.setText("average")
-        self.btnAvge.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
-        self.btnAvge.setCheckable(True)
+        self.btnAvge.setText("data")
+        #self.btnAvge.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
+        self.btnAvge.setIcon(Qt.QIcon("drive.png"))
+        #self.btnAvge.setCheckable(True)
         self.btnAvge.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         toolBar.addWidget(self.btnAvge)
-
+        """
         self.btnAutoc = Qt.QToolButton(toolBar)
         self.btnAutoc.setText("correlate")
         self.btnAutoc.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
@@ -637,6 +638,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.filepick.valueChanged.connect(self.setFilePaths)
         self.btnFreeze.clicked.connect(self.openFile)
         self.btnMode.clicked.connect(self.saveFile)
+        self.btnAvge.clicked.connect(self.saveDataAsHDF)
         self.bthread = None
 
     def makeLabel(self, title):
@@ -787,6 +789,48 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         C.write(f)
         f.close()
         logger.info("Write file: "+filename)
+
+    def saveDataAsHDF(self, p):
+        """
+        Save histogram data to hdf5 file.
+
+        Parameters
+        ----------
+        p : ignored
+        """
+        #if self.filepick.files is None:
+        #    logger.warn("Nothing to save")
+        #    return
+        import h5py
+        def _savedata(path,sp):
+            h=sp.histo
+            if h.dims==1:
+                print(path+"/data")
+                dset=f.create_dataset(path+"/data",data=h.data)
+                dset.attrs['type']="h1"
+                dset.attrs['adc']=h.adc1
+                dset.attrs['adcrange']=h.adcrange1
+                dset.attrs['size']=h.size1
+                dset.attrs['divisor']=h.divisor1
+                print(h.adc1,h.size1,h.adcrange1,h.divisor1,len(h.data))
+            elif h.dims==2:
+                print(path+"/data")
+                dset=f.create_dataset(path+"/data",data=h.data)
+                dset.attrs['type']="h2"
+                dset.attrs['adc1']=h.adc1
+                dset.attrs['adc2']=h.adc2
+                dset.attrs['adcrange1']=h.adcrange1
+                dset.attrs['adcrange2']=h.adcrange2
+                dset.attrs['size1']=h.size1
+                dset.attrs['size2']=h.size2
+                dset.attrs['divisor1']=h.divisor1
+                dset.attrs['divisor2']=h.divisor2
+                print(h.adc1,h.size1,h.adcrange1,h.divisor1,len(h.data))
+        filename,_=Qt.QFileDialog.getSaveFileName(self,'Save file',
+                                                  '.',"HDF Data File (*.hdf5)")
+        if filename == '': return
+        f=h5py.File(filename,"w")
+        self.plotmodel.saveData(_savedata)
 
     @pyqtSlot('QString')
     @pyqtSlot(int)

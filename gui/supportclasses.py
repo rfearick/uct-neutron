@@ -95,6 +95,34 @@ class PlotTreeModel(Qt.QStandardItemModel):
         item=self.invisibleRootItem()
         _walk(item)
 
+    def saveData(self, callback):
+        """
+        Walk the tree and save data of nodes.
+
+        Parameters
+        ----------
+            callback : callable
+                Function to perform actual output to file.
+                Function accepts data 'pathname' and data ref as args.
+        """
+        def _walk(item):
+            i=0
+            while item.child(i) is not None:
+                child=item.child(i)
+                if child.data() is None:
+                    self.dpath="/"+child.text()
+                    dpath=self.dpath
+                else:
+                    dpath=self.dpath+'/'+child.text()
+                    callback(dpath,child.data())
+                _walk(child)
+                i+=1
+           
+        item=self.invisibleRootItem()
+        _walk(item)
+
+
+        
 class PlotTreeView(Qt.QTreeView):
     """
     V(iew) and C  part of MVC for spectrum plots.
@@ -134,15 +162,16 @@ class PlotTreeView(Qt.QTreeView):
         
 
 if __name__=="__main__":
-    
+
+    data="data"
     app = Qt.QApplication(sys.argv)
     C=PlotTreeModel(None)
     g1=C.appendGroup("Group1")
-    C.appendAt(g1,"g1_1",None)
-    C.appendAt(g1,"g1_2",None)
-    C.appendAt(g1,"g1_3",None)
+    C.appendAt(g1,"g1_1",data+"1")
+    C.appendAt(g1,"g1_2",data+"2")
+    C.appendAt(g1,"g1_3",data+"3")
     g2=C.appendGroup("Group2")
-    C.appendAt(g2,"g2_1",None)
+    C.appendAt(g2,"g2_1",data+"4")
 
     C.walk()
 

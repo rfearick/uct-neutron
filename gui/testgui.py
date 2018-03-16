@@ -347,14 +347,13 @@ class CalculatedEventSort(object):
     """
     def __init__( self, calibration ):
 
-        
         calibration=Calibration()
         data=AnalysisData()
         self.analysisdata=data
-        speed_of_lightdata.speed_of_light # m/ns
+        speed_of_light=data.speed_of_light # m/ns
         target_distance=data.target_distance # m , flight path target to detector
-        slopeTof=calibration.TAC # TAC calibration in channel/ns
-        choffset=target_distance*slopeTof/speed_of_light # channel offset due to flight path
+        slope_Tof=calibration.TAC # TAC calibration in channel/ns
+        choffset=target_distance*slope_Tof/speed_of_light # channel offset due to flight path
         chT0=self.analysisdata.Tgamma*slopeTof + choffset # channel of gamma flash at detector
         self.chT0=T0 # keep copy
         self.choffset=choffset
@@ -560,8 +559,10 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.taskwidget.setLayout(vlayout)
         self.mainwin.addWidget(self.taskwidget)
- 
-        # example code taken from dualscopeN.py
+
+        # set up user interface
+        self.setupMenuBar()
+        # toolbar example code taken from dualscopeN.py
         toolBar = Qt.QToolBar(self)
         self.addToolBar(toolBar)
         sb=self.statusBar()
@@ -665,7 +666,32 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         label.setFrameStyle(Qt.QFrame.StyledPanel|Qt.QFrame.Raised)
         label.setContentsMargins(1,2,1,2)
         return label
-        
+
+    def setupMenuBar(self):
+        """
+        Confugure the menu bar
+        """
+        import platform
+        # Mac (Darwin) needs special treatment
+        if platform.system()=="Darwin":
+            menuBar=Qt.QMenuBar(None)
+        else:
+            menuBar=self.menuBar()
+        self.mbar=menuBar
+        #menuBar.setNativeMenuBar(False)
+        menu=menuBar.addMenu("&File")
+        action=Qt.QAction('Open Filelist...',None)
+        menu.addAction(action)
+        self.openfileaction=action
+        action.triggered.connect(self.openFile)
+        action=Qt.QAction('Save Filelist...',None)
+        menu.addAction(action)
+        self.savefileaction=action
+        action.triggered.connect(self.saveFile)
+        action=Qt.QAction('Save Data to HDF...',None)
+        menu.addAction(action)
+        self.savehdfaction=action
+        action.triggered.connect(self.saveDataAsHDF)
 
     def startSorting(self, setupsorter):
         """
@@ -903,6 +929,7 @@ if __name__=="__main__":
     # Admire! 
     app = Qt.QApplication(sys.argv)
     demo=NeutronAnalysisDemo()
+    demo.setWindowTitle("The Amazing List File Sorter")
     demo.show()
     #demo.startSorting()
     sys.exit(app.exec_())

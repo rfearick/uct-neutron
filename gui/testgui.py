@@ -570,6 +570,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         sb.setFont(sbfont)
         sb.showMessage("Status=1")
 
+        # !! use addAction instead ?
         self.btnFreeze = Qt.QToolButton(toolBar)
         self.btnFreeze.setText("Open expt")
         self.btnFreeze.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
@@ -636,7 +637,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         vlayout.setContentsMargins(1,1,1,1) # cut down margins from 11px
         self.plotwidget.setLayout(vlayout)
         self.mainwin.addWidget(self.plotwidget)
-                                  
+
+        # connect signals
         self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.fileChanged.connect(self.setFilePaths)
         self.filepick.valueChanged.connect(self.setFilePaths)
@@ -669,7 +671,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     def setupMenuBar(self):
         """
-        Confugure the menu bar
+        Configure the menu bar
         """
         import platform
         # Mac (Darwin) needs special treatment
@@ -773,13 +775,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             def _SetupCalibSort(self):
                 return self.calibrator
             self.startSorting(_SetupCalibSort)
-
+    """
     def updateCalibration(self):
         pass
         if self.calibrator is not None:
             self.calibration.update(self.calibrator.calibration)
+    """
         
-    
     def openFile(self,p):
         """
         Read a file name from open file dialog.
@@ -917,7 +919,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                     d.T0=T0
             except:
                 logger.error("Tgamma is not a float")
-        
             
     def printPlot(self):
         """

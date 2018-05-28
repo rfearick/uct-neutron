@@ -75,7 +75,7 @@ class MyLassoSelector(LassoSelector):
         self.verts=None
 
     def _press(self, event):
-        print("_press",event.button, self.startfeed)
+        print("_press",event.button, self.startfeed, self.verts is None, self.ax)
         if event.button == 1 and self.verts is None:
             self.verts = []
             self.line.set_data([[], []])
@@ -85,7 +85,7 @@ class MyLassoSelector(LassoSelector):
             self.startfeed=None
 
     def _release(self, event):
-        print("_release", event.button)
+        print("_release", event.button, self.verts is None)
         if self.verts is not None:
             if event.button==1:
                 self.startfeed=self._get_data(event)
@@ -119,7 +119,7 @@ class MyLassoSelector(LassoSelector):
     def _onmove2(self, event):
         if self.startfeed is not None:
             feedbackline=[self.startfeed,self._get_data(event)]
-            print("feedback",feedbackline)
+            print("feedback2",feedbackline)
             self.feedback.set_data(list(zip(*feedbackline)))
             self.update()
 

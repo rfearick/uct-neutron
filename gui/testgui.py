@@ -68,9 +68,17 @@ import time
 
 plt.ion()       # turn on interactive mode of matplotlib
 
-def onselect(verts):
-    print(verts)
 
+
+class Gate2d(object):
+
+    def __init__(self, name, vertlist):
+
+        self.name=name
+        self.vertlist=vertlist
+
+        
+    
 class SpectrumPlotter(Qt.QObject):
     """
     define a spectrum plot
@@ -88,6 +96,7 @@ class SpectrumPlotter(Qt.QObject):
     def __init__( self, parent, h, tree, name, xname=None, yname=None  ):
         super().__init__(parent=parent)
         self.plotmodel=parent.plotmodel
+        self.parent=parent
         self.histo=h
         self.unsorted=True
         self.tree=tree
@@ -95,6 +104,7 @@ class SpectrumPlotter(Qt.QObject):
         self.xname=xname if xname is not None else "channel"
         self.yname=yname if yname is not None else "counts per channel"
         self.fig=None
+        self.lasso=None
         self.calibration=Calibration()
         #print("plot object created")
         self.timer=Qt.QTimer()
@@ -111,18 +121,25 @@ class SpectrumPlotter(Qt.QObject):
         h=self.histo
         fig=plt.figure(self.name)
         nfig=fig.number
-        #print('fig',plt.get_fignums(),nfig, h.dims, self.unsorted)
+        print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
         self.drawPlot(h)
         fig.canvas.draw_idle()
-        if self.fig is None:
+        # lasso disappears if window closed and reopened. Must check super
+        if 1:#self.fig is None:
             if h.dims==2:
                 from polygonlasso import MyLassoSelector
                 ax=fig.gca()
-                self.lasso=MyLassoSelector(ax,onselect,useblit=False)
+                self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
                 #print("lasso")
         self.fig=nfig
         fig.canvas.manager.window.closing.connect(self.closed)
         if self.unsorted: self.timer.start()
+
+    def select2dGate(self, verts):
+        print(verts)
+        text,ok=Qt.QInputDialog.getText(self.parent, "Gates",
+                                        "Enter gate name:", Qt.QLineEdit.Normal, "")
+        gate=Gate2d(text, verts)
 
     def drawPlot(self,h):
         """

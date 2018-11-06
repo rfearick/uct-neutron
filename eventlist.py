@@ -360,6 +360,7 @@ class Sorter(object):
     def __init__( self, stream, histlist, gatelist=None ):
         self.stream = stream
         self.histlist = histlist
+        self.morehist = None
         self.gatelist = gatelist
         self._groups=[]
         self._hists=[]
@@ -409,7 +410,7 @@ class Sorter(object):
                         histlist=self._hists[i]
                         for h in histlist:
                             h.increment(v)
-                    if self.moresort is not None: self.moresort(a,v)
+                    if self.moresort is not None: self.moresort(a,v,self.morehist)
                 else:
                     nunknown1+=1
             else:
@@ -427,8 +428,9 @@ class Sorter(object):
         print("unknown2",nunknown2)
         return sortadc
 
-    def setExtraSorter( self, sorter):
+    def setExtraSorter( self, sorter, histlist):
         self.moresort=sorter
+        self.morehist=histlist
         
         
 

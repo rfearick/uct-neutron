@@ -68,7 +68,7 @@ import time
 
 plt.ion()       # turn on interactive mode of matplotlib
 
-
+gatelist = {}
 
 class Gate2d(object):
 
@@ -140,6 +140,7 @@ class SpectrumPlotter(Qt.QObject):
         text,ok=Qt.QInputDialog.getText(self.parent, "Gates",
                                         "Enter gate name:", Qt.QLineEdit.Normal, "")
         gate=Gate2d(text, verts)
+        gatelist[text]=verts
 
     def drawPlot(self,h):
         """
@@ -299,6 +300,17 @@ def SetupSort(parent):
     CreatePlot( parent, tree, branch, h21, "NE213 Adc1 v Adc2", xname="Long", yname="Short" )
     CreatePlot( parent, tree, branch, h13, "NE213 Adc1 v Adc3", xname="Long", yname="TOF" )
 
+    if Tgamma > 0.0: # Tgamma is set
+        h3t=Histogram(E, GROUP_NE213, 'ADC3', 512)
+        hE=Histogram(E, GROUP_NE213, 'ADC3', 512)
+        hv=Histogram(E, GROUP_NE213, 'ADC3', 512)
+        CreatePlot( parent, tree, branch, h3t, "NE213 tof" )
+        CreatePlot( parent, tree, branch, hE, "NE213 E" )
+        CreatePlot( parent, tree, branch, hv, "NE213 v" )
+        histlist2=[h3t,hE,hv]
+        c=CalculatedEventSort(None)
+        S.setExtraSorter(c.sort, histlist2)
+
     return S
 
     """
@@ -371,22 +383,28 @@ class CalculatedEventSort(object):
         target_distance=data.target_distance # m , flight path target to detector
         slope_Tof=calibration.TAC # TAC calibration in channel/ns
         choffset=target_distance*slope_Tof/speed_of_light # channel offset due to flight path
-        chT0=self.analysisdata.Tgamma*slopeTof + choffset # channel of gamma flash at detector
-        self.chT0=T0 # keep copy
+        chT0=self.analysisdata.Tgamma*slope_Tof + choffset # channel of gamma flash at detector
+        self.chT0=chT0 # keep copy
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
         self.cutL=calibration.channel(2.5) # convert to channel
 
-    def sort(v0,v1,v2,v3):
+    def sort(self,a,v,h):
+                         
+        v2 = v[2]
+        v0 = v[0]
+        h3t = h[0]
+        hE = h[1]
+        hv = h[2]
         
-        Tof=self.chT0-v2+rand()-0.5   # calculate TOF and spread randomly over channel
+        Tof=self.chT0-v2+np.random.rand()-0.5   # calculate TOF and spread randomly over channel
         if v0<self.cutL: return
         h3t.increment([0,0,int(Tof),0])
         # if Tof too small to be n, ignore rest
         if v2>self.chTgamma2: return
 
         # calculate neutron energy from relativistic kinematics
-        betan=choffset/Tof
+        betan=self.choffset/Tof
         if betan>= 1.0:
             print("sqrt",v2,betan,Tof)
             return

@@ -181,23 +181,27 @@ class SpectrumPlotter(Qt.QObject):
         x=None
         if 'NE213' not in self.tree.text():
             return x,xl
-        calib=self.calibration
-        try:
-            # must compensate for histo size
-            factor=1024//size  # -> divisor
-            if adc==calib.EADC:
-                m=calib.slope/factor
-                c=calib.intercept/factor
-                x=np.arange(0.0,float(size),1.0)
-                x=(1.0/m)*x-c/m
-                xl="Energy [MeVee]"
-            elif adc==calib.TADC:
-                m=calib.TAC/factor
-                x=np.arange(0.0,float(size),1.0)
-                x=x/m
-                xl="T [ns]"              
-        except:
-                x=np.arange(0.0,float(size),1.0)
+        if h.calib == None:
+            calib=self.calibration
+            try:
+                # must compensate for histo size
+                factor=1024//size  # -> divisor
+                if adc==calib.EADC:
+                    m=calib.slope/factor
+                    c=calib.intercept/factor
+                    x=np.arange(0.0,float(size),1.0)
+                    x=(1.0/m)*x-c/m
+                    xl="Energy [MeVee]"
+                elif adc==calib.TADC:
+                    m=calib.TAC/factor
+                    x=np.arange(0.0,float(size),1.0)
+                    x=x/m
+                    xl="T [ns]"              
+            except:
+                    x=np.arange(0.0,float(size),1.0)
+        else:
+            m,xl=h.calib
+            x=np.arange(0.0,float(size),1.0)*m
         return x, xl
         
     
@@ -301,12 +305,12 @@ def SetupSort(parent):
     CreatePlot( parent, tree, branch, h13, "NE213 Adc1 v Adc3", xname="Long", yname="TOF" )
 
     if Tgamma > 0.0: # Tgamma is set
-        h3t=Histogram(E, GROUP_NE213, 'ADC3', 512)
-        hE=Histogram(E, GROUP_NE213, 'ADC3', 512)
-        hv=Histogram(E, GROUP_NE213, 'ADC3', 512)
-        CreatePlot( parent, tree, branch, h3t, "NE213 tof" )
-        CreatePlot( parent, tree, branch, hE, "NE213 E" )
-        CreatePlot( parent, tree, branch, hv, "NE213 v" )
+        h3t=Histogram(E, GROUP_NE213, 'ADC3', 1024)
+        hE=Histogram(E, GROUP_NE213, 'Cal3', 1024, label="En", calib=(250.0/1024,"En [MeV]"))
+        hv=Histogram(E, GROUP_NE213, 'Cal3', 1024, label="vn", calib=(0.001,"beta_n"))
+        CreatePlot( parent, tree, branch, h3t, "Calc tof" )
+        CreatePlot( parent, tree, branch, hE, "Calc E" )
+        CreatePlot( parent, tree, branch, hv, "Calc v" )
         histlist2=[h3t,hE,hv]
         c=CalculatedEventSort(None)
         S.setExtraSorter(c.sort, histlist2)
@@ -361,7 +365,7 @@ def SortCallback(v0,v1,v2,v3,cutL):
         print("sqrt",v2,betan,Tof)
         return
     En=939.565*(1.0/np.sqrt(1.0-betan*betan)-1.0)
-    En=int(En*4+0.5)&1023
+    En=int(En*(1024/250.0)+0.5)&1023
     
     #print(Tof,vn,En,int(Tof))
     #h1cut.increment(v)
@@ -388,7 +392,8 @@ class CalculatedEventSort(object):
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
         self.cutL=calibration.channel(2.5) # convert to channel
-
+        logger.info("chT0, choffset, chTgamma = %5.1f, %5.1f, %5.1f"%(chT0,choffset,chT0-choffset))
+        
     def sort(self,a,v,h):
                          
         v2 = v[2]
@@ -406,10 +411,10 @@ class CalculatedEventSort(object):
         # calculate neutron energy from relativistic kinematics
         betan=self.choffset/Tof
         if betan>= 1.0:
-            print("sqrt",v2,betan,Tof)
+            #print("sqrt",v2,betan,Tof)
             return
         En=939.565*(1.0/np.sqrt(1.0-betan*betan)-1.0)
-        En=int(En*4+0.5)&1023
+        En=int(En*1024/250.0+0.5)&1023
 
         #print(Tof,vn,En,int(Tof))
         #h1cut.increment(v)

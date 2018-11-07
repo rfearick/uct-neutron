@@ -262,9 +262,10 @@ class Histogram(object):
         data:      reference to data array (numpy)
         yl,xl:     adc names from histogram creation (for plot labels)
     """
-    def __init__(self, stream, group, adctuple, sizetuple, label=None):
+    def __init__(self, stream, group, adctuple, sizetuple, label=None, calib=None):
         self.coincidencegroup=group
         self.label=label
+        self.calib=calib
         if label is None:
             labeltuple=adctuple
         else:
@@ -288,7 +289,10 @@ class Histogram(object):
             self.adc1=adctuple[0]
             self.size1=sizetuple[0]
             self.label1=labeltuple[0]
-            self.adcrange1=C.getint(adctuple[0],'range')
+            if adctuple[0][0]=='A':
+                self.adcrange1=C.getint(adctuple[0],'range')
+            else:
+                self.adcrange1=sizetuple[0]
             self.divisor1 = self.adcrange1//sizetuple[0]
             self.index1=int(adctuple[0][3])-1
             self.data=np.zeros(sizetuple[0])

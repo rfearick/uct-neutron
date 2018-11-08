@@ -62,7 +62,17 @@ TOTALADCS=4
 # unlikely adc is set to many of these, but ...
 powers_of_two=[2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]
 
+class Gate2d(object):
 
+    def __init__(self, name, vertlist):
+        """
+        2-d gate
+        """
+        self.name=name
+        self.vertlist=vertlist
+        self.gatearray=None
+        self.ingate=True
+        
 class EventSource(object):
     """
     a class to encapsulate neutron daq .lst files
@@ -256,6 +266,9 @@ class Histogram(object):
         sizetuple: Size of histo axis -- should be int power of two
                    Simililar protocol to adctuple
         label:     Tag to identify axes for use in plotting
+        calib:     Calibration for calculated parameters. 
+                   A tuple, (m,label) where m is slope in ,unit./ch and
+                   label is used for x - axis (e.g. "E_n [MeV]")
 
     Returns
     -------
@@ -312,6 +325,7 @@ class Histogram(object):
             self.index1=int(adctuple[0][3])-1
             self.index2=int(adctuple[1][3])-1
             self.data=np.zeros(sizetuple)
+            self.gate=None
         else:
             raise ValueError("Number of ADCs must be 1 or 2")
 
@@ -321,9 +335,16 @@ class Histogram(object):
         elif self.dims==2:
             i1=self.index1
             i2=self.index2
+            v1=v[i1]
+            v2=v[i2]
             d1=self.divisor1
             d2=self.divisor2
-            self.data[v[i2]//d2,v[i1]//d1]+=1.0
+            ix=v2//d2
+            iy=v1//d1
+            self.data[ix,iy]+=1.0
+            if self.gate is not None:
+                ingate=self.gate.gatearray[ix,iy]
+                
 
     def increment1(self,v):
         if self.dims==1:
@@ -333,13 +354,22 @@ class Histogram(object):
             pass
         
     def increment2(self,v1,v2):
+        ingate=True
         if self.dims==1:
             # Error
             pass
         elif self.dims==2:
             d1=self.divisor1
             d2=self.divisor2
-            self.data[v2//d2,v1//d1]+=1.0
+            ix=v2//d2
+            iy=v1//d1
+            self.data[ix,iy]+=1.0
+            ingate=True
+            if self.gate is not None:
+                ingate=self.gate.gatearray[ix,iy]
+                self.gate.ingate=ingate
+        return ingate
+        
 
     def get_plotdata(self):
         if self.dims==1:
@@ -352,6 +382,9 @@ class Histogram(object):
             return self.data, self.label1, 'x'
         else:
             return self.data, self.label1, self.label2
+
+    def set_gate(gate):
+        self.gate=gate
 
 class Sorter(object):
     """

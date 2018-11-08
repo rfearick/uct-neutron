@@ -25,7 +25,7 @@ SpectrumPlot -- handle start of sort/interaction with update timer
 import sys
 sys.path.append("..") # for eventlist.py
 from eventlist import Histogram, Sorter, EventSource
-from eventlist import EventFlags
+from eventlist import EventFlags, Gate2d
 
 #simplify event flags
 TIMER   =EventFlags.TIMER
@@ -69,14 +69,6 @@ import time
 plt.ion()       # turn on interactive mode of matplotlib
 
 gatelist = {}
-
-class Gate2d(object):
-
-    def __init__(self, name, vertlist):
-
-        self.name=name
-        self.vertlist=vertlist
-
         
     
 class SpectrumPlotter(Qt.QObject):
@@ -105,6 +97,7 @@ class SpectrumPlotter(Qt.QObject):
         self.yname=yname if yname is not None else "counts per channel"
         self.fig=None
         self.lasso=None
+        self.gate=None
         self.calibration=Calibration()
         #print("plot object created")
         self.timer=Qt.QTimer()
@@ -139,8 +132,19 @@ class SpectrumPlotter(Qt.QObject):
         print(verts)
         text,ok=Qt.QInputDialog.getText(self.parent, "Gates",
                                         "Enter gate name:", Qt.QLineEdit.Normal, "")
-        gate=Gate2d(text, verts)
-        gatelist[text]=verts
+        self.gate=Gate2d(text, verts)
+        gatelist[text]=self.gate
+        h=self.histo
+        if h.dims==2:
+            data,xl,yl=h.get_plotdata()
+            self.gate.gatearray=np.Full_like(data,True,dtype=np.bool8)
+            p=path.Path(verts)
+            for ix in range(nx):
+                for iy in range(ny):
+                    if p.contains_point((iy,ix)):
+                        gatearray[ix,iy]=True
+            h.set_gate(self.gate)
+
 
     def drawPlot(self,h):
         """
@@ -404,6 +408,10 @@ class CalculatedEventSort(object):
         
         Tof=self.chT0-v2+np.random.rand()-0.5   # calculate TOF and spread randomly over channel
         if v0<self.cutL: return
+        if 'g1' in gatelist:
+            gate=gatelist['g1']
+            ingate=gate.ingate
+            if not ingate: return
         h3t.increment([0,0,int(Tof),0])
         # if Tof too small to be n, ignore rest
         if v2>self.chTgamma2: return

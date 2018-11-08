@@ -62,6 +62,7 @@ TOTALADCS=4
 # unlikely adc is set to many of these, but ...
 powers_of_two=[2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]
 
+gatelist = {}
 class Gate2d(object):
 
     def __init__(self, name, vertlist):
@@ -343,7 +344,7 @@ class Histogram(object):
             iy=v1//d1
             self.data[ix,iy]+=1.0
             if self.gate is not None:
-                ingate=self.gate.gatearray[ix,iy]
+                gatelist[self.gate].ingate=gatelist[self.gate].gatearray[ix,iy]
                 
 
     def increment1(self,v):
@@ -383,7 +384,7 @@ class Histogram(object):
         else:
             return self.data, self.label1, self.label2
 
-    def set_gate(gate):
+    def set_gate(self,gate):
         self.gate=gate
 
 class Sorter(object):

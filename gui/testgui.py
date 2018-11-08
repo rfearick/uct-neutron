@@ -25,7 +25,7 @@ SpectrumPlot -- handle start of sort/interaction with update timer
 import sys
 sys.path.append("..") # for eventlist.py
 from eventlist import Histogram, Sorter, EventSource
-from eventlist import EventFlags, Gate2d
+from eventlist import EventFlags, Gate2d, gatelist
 
 #simplify event flags
 TIMER   =EventFlags.TIMER
@@ -51,6 +51,7 @@ import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
+import matplotlib.path as path
 from matplotlib.widgets import LassoSelector
 import configparser
 import logging
@@ -68,7 +69,6 @@ import time
 
 plt.ion()       # turn on interactive mode of matplotlib
 
-gatelist = {}
         
     
 class SpectrumPlotter(Qt.QObject):
@@ -139,13 +139,19 @@ class SpectrumPlotter(Qt.QObject):
         h=self.histo
         if h.dims==2:
             data,xl,yl=h.get_plotdata()
-            self.gate.gatearray=np.Full_like(data,False,dtype=np.bool8)
+            self.gate.gatearray=np.full_like(data,False,dtype=np.bool)
+            nx,ny=np.shape(self.gate.gatearray)
+            print('gate',nx,ny)
             p=path.Path(verts)
             for ix in range(nx):
                 for iy in range(ny):
-                    if p.contains_point((iy,ix)):
-                        gatearray[ix,iy]=True
-            h.set_gate(self.gate)
+                    if p.contains_point((float(iy),float(ix))):
+                        self.gate.gatearray[ix,iy]=True
+                        #print(ix,iy,'True')
+                    #else: print(ix,iy, 'False')
+                  
+            h.set_gate(text)
+            logger.info("Gate %s set"%(text,))
 
 
     def drawPlot(self,h):
@@ -297,6 +303,10 @@ def SetupSort(parent):
     h13=Histogram(E, GROUP_NE213, ('ADC1','ADC3'), (256,256),label=('L','T'))
     histlist=[h1,h2,h3,h4,h21,h13]
 
+    # hack in gate
+    if 'g1' in gatelist:
+        h21.set_gate('g1')
+        
     # define sort process
     S=Sorter( E, histlist)
 
@@ -402,6 +412,7 @@ class CalculatedEventSort(object):
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
         self.cutL=calibration.channel(2.5) # convert to channel
         logger.info("chT0, choffset, chTgamma = %5.1f, %5.1f, %5.1f"%(chT0,choffset,chT0-choffset))
+        self.start=0
         
     def sort(self,a,v,h):
                          
@@ -415,8 +426,16 @@ class CalculatedEventSort(object):
         if v0<self.cutL: return
         if 'g1' in gatelist:
             gate=gatelist['g1']
+            #if self.start==0:
+                #print(gate,gate.name)
+                #print(gate.name, gate.ingate)
             ingate=gate.ingate
-            if not ingate: return
+            if not ingate:
+                #print('gate',ingate)
+                return
+        #elif self.start==0:
+            #print("No gate")
+        self.start=1
         h3t.increment([0,0,int(Tof),0])
         # if Tof too small to be n, ignore rest
         if v2>self.chTgamma2: return

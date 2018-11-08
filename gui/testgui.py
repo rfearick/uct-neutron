@@ -92,6 +92,8 @@ class SpectrumPlotter(Qt.QObject):
         self.histo=h
         self.unsorted=True
         self.tree=tree
+        self.branchname=tree.text()
+        #print('branch',branchname)
         self.name=name
         self.xname=xname if xname is not None else "channel"
         self.yname=yname if yname is not None else "counts per channel"
@@ -112,7 +114,7 @@ class SpectrumPlotter(Qt.QObject):
         If sorting in progress, starts a timer to update plot at intervals.
         """
         h=self.histo
-        fig=plt.figure(self.name)
+        fig=plt.figure(self.branchname+' - '+self.name)
         nfig=fig.number
         print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
         self.drawPlot(h)
@@ -137,7 +139,7 @@ class SpectrumPlotter(Qt.QObject):
         h=self.histo
         if h.dims==2:
             data,xl,yl=h.get_plotdata()
-            self.gate.gatearray=np.Full_like(data,True,dtype=np.bool8)
+            self.gate.gatearray=np.Full_like(data,False,dtype=np.bool8)
             p=path.Path(verts)
             for ix in range(nx):
                 for iy in range(ny):
@@ -235,13 +237,15 @@ class SpectrumPlotter(Qt.QObject):
         """
         self.timer.stop()
 
-                
+ne213pass=0
+
 def SetupSort(parent):
     """
     Setup a sort of data
     This is hardwired here.
     At some point this will change; there should be some sort builder program.
     """
+    global ne213pass
     #filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
     #fileNE213="NE213_025.lst"  # 0deg natLi
     #fileNE213="NE213_026.lst"  # 0deg 12C 
@@ -298,7 +302,8 @@ def SetupSort(parent):
 
     # create tree for plots widget
     tree=parent.plotmodel
-    branch=tree.appendGroup( "NE213 data" )
+    ne213pass += 1
+    branch=tree.appendGroup( "NE213 data (pass %d)"%(ne213pass,) )
 
     # create plot items 
     CreatePlot( parent, tree, branch, h1, "NE213 Adc 1" )

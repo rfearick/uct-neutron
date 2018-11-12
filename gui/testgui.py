@@ -713,6 +713,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         # connect signals
         self.tasklist.doubleClicked.connect(self.runTask)
         self.filepick.fileChanged.connect(self.setFilePaths)
+        self.filepick.dataChanged.connect(self.setAnalysisData)
         self.filepick.valueChanged.connect(self.setFilePaths)
         self.btnFreeze.clicked.connect(self.openFile)
         self.btnMode.clicked.connect(self.saveFile)
@@ -991,6 +992,46 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                     d.T0=T0
             except:
                 logger.error("Tgamma is not a float")
+
+    @pyqtSlot('QString','QString')
+    def setAnalysisData(self, tag, data):
+        print("filepaths float",data)
+        print("Tgamma from field",tag)
+        try:
+            fdata=float(data)
+        except:
+            logger.error(tag+"is not a float")
+            
+        d=AnalysisData()
+        if tag == 'Tgamma':
+            #print("d",d.Tgamma)
+            d.Tgamma=fdata
+            if 'TAC' in self.calibration.keys():
+                Tcon=d.target_distance/d.speed_of_light  # in ns
+                T0=fdata+Tcon
+                logger.info("Tgamma set to %5.1f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
+                d.T0=T0
+            else:
+                logger.info("Tgamma set to %5.1f"%(fdata,))
+                
+        elif tag == 'Tdist':
+            d.target_distance=fdata
+            if 'TAC' in self.calibration.keys():
+                Tcon=d.target_distance/d.speed_of_light  # in ns
+                T0=d.Tgamma+Tcon
+                d.T0=T0
+                logger.info("Tdist set to %5.3f, Tcon=%5.1f, T0=%5.1f"&(fdata,Tcon,T0))
+            else:
+                logger.info("Tdist set to %5.3f"%(fdata,))
+        elif tag == 'Cgain':
+            d.calibration_gain=fdata
+            logger.info("Extra calibration gain set to %4.1f"%(fdata,))
+        elif tag == 'TAC dt':
+            d.TAC_interval=fdata
+            logger.info("TAC interval set to %4.1f"%(fdata,))
+        else:
+            logger.error("Invalid input")
+        
             
     def printPlot(self):
         """

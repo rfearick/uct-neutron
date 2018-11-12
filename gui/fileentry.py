@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QLabe
 from PyQt5.QtWidgets import QLineEdit
 
 import logging
+import analysisdata
 
 """
 Gather the file names needed for analysis
@@ -166,13 +167,19 @@ class FilePicker(QTabWidget):
     """
     valueChanged=pyqtSignal('QString')
     fileChanged=pyqtSignal(int)
+    dataChanged=pyqtSignal('QString','QString')
     def __init__(self):
 
         super().__init__()
+        self.calibdata  = QWidget()
         self.calibfiles = QWidget()
         self.ne213files = QWidget()
         self.fcfiles    = QWidget()
         
+        self.editTACdt=None
+        self.editTdist=None
+        self.editCgain=None
+        #self.editTgamma=None
         self.editNa=None
         self.editCs=None
         self.editAmBe=None
@@ -185,9 +192,50 @@ class FilePicker(QTabWidget):
 
         self.files={}
         
+        self._makeDataTab()
         self._makeCalibTab()
         self._makeNE213Tab()
         self._makeFCTab()
+
+    def _makeDataTab(self):
+        layout=QVBoxLayout()
+        adata=analysisdata.AnalysisData()
+
+        layout.addWidget( QLabel("TAC interval [ns]") )
+        self.editTACdt=DataField("TAC dt")
+        layout.addWidget( self.editTACdt )
+        self.editTACdt.setText("%4.1f"%(adata.TAC_interval,))
+        #layout.addLayout( hlayout )
+        layout.addStretch(1)
+        self.editTACdt.valueChanged.connect(self.setCalibData)
+        
+        layout.addWidget( QLabel("Target distance [m]") )
+        self.editTdist=DataField("Tdist")
+        layout.addWidget( self.editTdist )
+        self.editTdist.setText("%5.3f"%(adata.target_distance,))
+        #layout.addLayout( hlayout )
+        layout.addStretch(1)
+        self.editTdist.valueChanged.connect(self.setCalibData)
+        
+        layout.addWidget( QLabel("Calibration gain boost") )
+        self.editCgain=DataField("Cgain")
+        layout.addWidget( self.editCgain )
+        self.editCgain.setText("%3.1f"%(adata.calibration_gain,))
+        #layout.addLayout( hlayout )
+        layout.addStretch(1)
+        self.editCgain.valueChanged.connect(self.setCalibData)
+        
+        #layout.addWidget( QLabel("Tgamma from TOF[ns]") )
+        #self.editTgamma=DataField("Tgamma")
+        #layout.addWidget( self.editTgamma )
+        #self.editTgamma.setText("0.0")
+        ##layout.addLayout( hlayout )
+        #layout.addStretch(1)
+        #self.editTgamma.valueChanged.connect(self.setCalibData)
+        
+        self.calibdata.setLayout(layout)
+        self.addTab( self.calibdata, "Analysis Data" )
+        
         
     def _makeCalibTab(self):
 
@@ -241,7 +289,7 @@ class FilePicker(QTabWidget):
         self.editNE213.valueChanged.connect(self.setFilePath)
 
         layout.addWidget( QLabel("NE213:TOF channel") )
-        self.editDefTOF=DataField("NE213")
+        self.editDefTOF=DataField("TOFchannel")
         layout.addWidget( self.editDefTOF )
         self.editDefTOF.setText("ADC3")
         #layout.addLayout( hlayout )
@@ -249,7 +297,7 @@ class FilePicker(QTabWidget):
         #self.editDefTOF.valueChanged.connect(self.setFilePath)
 
         layout.addWidget( QLabel("NE213:Tgamma [ns]") )
-        self.editTgamma=DataField("NE213")
+        self.editTgamma=DataField("Tgamma")
         layout.addWidget( self.editTgamma )
         self.editTgamma.setText("0.0")
         #layout.addLayout( hlayout )
@@ -300,7 +348,7 @@ class FilePicker(QTabWidget):
         #self.files[ident]=pathname
         #print(self.files)
         print(type(data))
-        self.valueChanged.emit(str(data)) # notify if file count changed
+        self.dataChanged.emit(str(ident),str(data)) # notify if file count changed
 
         
         

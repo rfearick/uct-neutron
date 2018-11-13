@@ -336,11 +336,9 @@ def SetupSort(parent):
     # check if spectrum calibrated
     calibration=Calibration()
     if(len(calibration.checkvars())==5):
-        #print("Spectrum is calibrated")
         logger.info("Spectrum is calibrated")
 
     cutL=2.5
-    #print("cutL at 2.5 Mev in ch ",calibration.channel(2.5))
     logger.info("cutL at 2.5 Mev in ch %6.2f"%(calibration.channel(2.5),))
     
     # check if TOF start position calculated
@@ -713,35 +711,37 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.btnOpenExpt.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
         self.btnOpenExpt.setCheckable(True)
         self.btnOpenExpt.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
-        self.btnOpenExpt.setToolTip("Open experiment file")
+        self.btnOpenExpt.setToolTip("Open list of experiment file names")
         toolBar.addWidget(self.btnOpenExpt)
         
         self.btnSaveExpt = Qt.QToolButton(toolBar)
         self.btnSaveExpt.setText("Save expt")
         self.btnSaveExpt.setIcon(self.style().standardIcon(Qt.QStyle.SP_DriveFDIcon))
         self.btnSaveExpt.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        self.btnSaveExpt.setToolTip("Save list of experiment file names")
         toolBar.addWidget(self.btnSaveExpt)
         
         self.btnPrint = Qt.QToolButton(toolBar)
         self.btnPrint.setText("Print")
         self.btnPrint.setIcon(Qt.QIcon(Qt.QPixmap(icons.print_xpm)))
         self.btnPrint.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        self.btnPrint.setToolTip("One day, may print something")
         toolBar.addWidget(self.btnPrint)
 
         
         self.btnSaveData = Qt.QToolButton(toolBar)
         self.btnSaveData.setText("data")
-        #self.btnSaveData.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
         self.btnSaveData.setIcon(Qt.QIcon("drive.png"))
-        #self.btnSaveData.setCheckable(True)
         self.btnSaveData.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        self.btnSaveData.setToolTip("Save all histogram data to hdf file")
         toolBar.addWidget(self.btnSaveData)
 
         toolBar.addSeparator()
 
         self.maxeventcount=None
 
-        self.lblMaxevent = Qt.QLabel("Max event count",toolBar)
+        self.lblMaxevent = Qt.QLabel("Max event count:",toolBar)
+        self.lblMaxevent.setToolTip("Set maximum number of events sorted, or None")
         toolBar.addWidget(self.lblMaxevent)
         self.editMaxevent = Qt.QLineEdit(toolBar)
         self.editMaxevent.setFixedWidth(100)

@@ -195,8 +195,11 @@ class SpectrumPlotter(Qt.QObject):
 
     def select2dGate(self, verts):
         print(verts)
-        text,ok=Qt.QInputDialog.getText(self.parent, "Gates",
-                                        "Enter gate name:", Qt.QLineEdit.Normal, "")
+        #text,ok=Qt.QInputDialog.getText(self.parent, "Gates",
+        #                                "Enter gate name:", Qt.QLineEdit.Normal, "")
+        text,ok=Qt.QInputDialog.getItem(self.parent, "Gates",
+                                        "Select gate:",
+                                        ["neutrons","gammas"], 0, False)
         self.gate=Gate2d(text, verts)
         gatelist[text]=self.gate
         h=self.histo
@@ -369,8 +372,8 @@ def SetupSort(parent):
     histlist=[h1,h2,h3,h4,h21,h13]
 
     # hack in gate
-    if 'g1' in gatelist:
-        h21.set_gate('g1')
+    if 'neutrons' in gatelist:
+        h21.set_gate('neutrons')
         
     # define sort process
     S=Sorter( E, histlist)
@@ -489,8 +492,8 @@ class CalculatedEventSort(object):
         
         Tof=self.chT0-v2+np.random.rand()-0.5   # calculate TOF and spread randomly over channel
         if v0<self.cutL: return
-        if 'g1' in gatelist:
-            gate=gatelist['g1']
+        if 'neutrons' in gatelist:
+            gate=gatelist['neutrons']
             #if self.start==0:
                 #print(gate,gate.name)
                 #print(gate.name, gate.ingate)

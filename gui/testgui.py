@@ -50,6 +50,7 @@ import numpy as np
 import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
+matplotlib.rcParams['toolbar'] = 'toolmanager'
 import matplotlib.pyplot as plt
 import matplotlib.path as path
 from matplotlib.widgets import LassoSelector
@@ -69,7 +70,29 @@ import time
 
 plt.ion()       # turn on interactive mode of matplotlib
 
-        
+# =================
+from matplotlib.backend_tools import ToolBase, ToolToggleBase
+
+# example tool added to toolbar.
+
+class ListTool(ToolBase):
+    '''List all the tools controlled by the `ToolManager`'''
+    # keyboard shortcut
+    default_keymap = 'm'
+    description = 'List Tool'
+
+    def trigger(self, *args, **kwargs):
+        print("Listing the spectrum")
+        print(self.figure)
+        for p in openplotlist:
+            if p.figure==self.figure:
+                print("figure found",p.histo.adc1,p.histo.label1)
+                for j in range(5):
+                    print(j, p.histo.data[j])
+
+#==============================
+
+
     
 class SpectrumPlotter(Qt.QObject):
     """
@@ -85,12 +108,40 @@ class SpectrumPlotter(Qt.QObject):
     xname :    label for x axis -- default to None
     yname :    label for y axis -- default to None
     """
+
+    openplotlist=[]
+
+    class nDumpTool(ToolBase):
+        """
+        Dump listing of spectrum to file
+        """
+        # keyboard shortcut
+        default_keymap = 'd'
+        description = 'Dump Tool'
+
+        def trigger(self, *args, **kwargs):
+            print("Listing the spectrum")
+            print(self.figure)
+            for p in SpectrumPlotter.openplotlist:
+                if p.figure==self.figure:
+                    print("figure found",p.histo.adc1,p.histo.label1)
+                    h=p.histo
+                    adc=h.adc1
+                    x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
+                    if x is None:
+                        x=np.arange(0.0,float(h.size1))
+                    print("# "+xl+", "+adc+" data")
+                    for j in range(5):
+                        print(x[j], p.histo.data[j])
+
+
     def __init__( self, parent, h, tree, name, xname=None, yname=None  ):
         super().__init__(parent=parent)
         self.plotmodel=parent.plotmodel
         self.parent=parent
         self.histo=h
         self.unsorted=True
+        self.opened=False
         self.tree=tree
         self.branchname=tree.text()
         #print('branch',branchname)
@@ -98,6 +149,7 @@ class SpectrumPlotter(Qt.QObject):
         self.xname=xname if xname is not None else "channel"
         self.yname=yname if yname is not None else "counts per channel"
         self.fig=None
+        self.figure=None
         self.lasso=None
         self.gate=None
         self.calibration=Calibration()
@@ -118,6 +170,7 @@ class SpectrumPlotter(Qt.QObject):
         nfig=fig.number
         print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
         self.drawPlot(h)
+        self.opened=True
         fig.canvas.draw_idle()
         # lasso disappears if window closed and reopened. Must check super
         if 1:#self.fig is None:
@@ -127,8 +180,18 @@ class SpectrumPlotter(Qt.QObject):
                 self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
                 #print("lasso")
         self.fig=nfig
+        self.figure=fig
         fig.canvas.manager.window.closing.connect(self.closed)
         if self.unsorted: self.timer.start()
+        # Add the custom tools that we created  ========
+        #print("canvas",fig.canvas.manager,matplotlib.rcParams['toolbar'])
+        #print("canvas",fig.canvas.manager.toolbar)
+        fig.canvas.manager.toolbar.add_toolitem(
+            'Dump', "mygroup",0, "drive.png", "DumpTool",False)
+        fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
+        self.openplotlist.append(self)
+
+
 
     def select2dGate(self, verts):
         print(verts)
@@ -241,6 +304,8 @@ class SpectrumPlotter(Qt.QObject):
         """
         Stop timer when window closed.
         """
+        self.opened=False
+        self.openplotlist.remove(self)
         self.timer.stop()
 
 ne213pass=0

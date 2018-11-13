@@ -1043,8 +1043,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                 item=self.tasklistitems[analysis_tasks[2]]
                 item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
         elif isinstance(count, str):
-            print("filepaths float",count)
-            print("Tgamma from field",count)
+            print("not here?")
             try:
                 Tg=float(count)
                 d=AnalysisData()
@@ -1060,8 +1059,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     @pyqtSlot('QString','QString')
     def setAnalysisData(self, tag, data):
-        print("filepaths float",data)
-        print("Tgamma from field",tag)
         try:
             fdata=float(data)
         except:

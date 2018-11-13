@@ -39,9 +39,7 @@ class FileField(QLineEdit):
     def getFile(self):
         directory=FileField.currentpath if FileField.currentpath is not None else '.'
         directory=str(directory)
-        #print("directory", directory)
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',directory,"List files (*.lst)")
-        #print(filename)
         if filename == '': return
         pp=Path(filename)
         if pp.exists():
@@ -53,12 +51,8 @@ class FileField(QLineEdit):
             if FileField.currentpath is None or FileField.currentpath != self.parentpath:
                 FileField.currentpath=pp.parent           
             self.setText(pp.name)
-            #print("input file:",filename)
-            #print("parent    :",pp.parent)
             mpapath=pp.with_suffix(".mpa")
-            #print("mpafile   :",mpapath.exists())
             scalers=self.getScalerData(mpapath)
-            ##print("scalers",scalers)
             self.valueChanged.emit(self.tag,pp)
 
     def setFile(self,filename):
@@ -72,12 +66,8 @@ class FileField(QLineEdit):
             if FileField.currentpath is None or FileField.currentpath != self.parentpath:
                 FileField.currentpath=pp.parent           
             self.setText(pp.name)
-            #print("input file:",filename)
-            #print("parent    :",pp.parent)
             mpapath=pp.with_suffix(".mpa")
-            #print("mpafile   :",mpapath.exists())
             scalers=self.getScalerData(mpapath)
-            ##print("scalers",scalers)
             self.valueChanged.emit(self.tag,pp)
         
 
@@ -137,9 +127,7 @@ class DataField(QLineEdit):
     def getFile(self):
         directory=FileField.currentpath if FileField.currentpath is not None else '.'
         directory=str(directory)
-        #print("directory", directory)
         filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',directory,"List files (*.lst)")
-        #print(filename)
         if filename == '': return
         pp=Path(filename)
         if pp.exists():
@@ -151,12 +139,9 @@ class DataField(QLineEdit):
             if FileField.currentpath is None or FileField.currentpath != self.parentpath:
                 FileField.currentpath=pp.parent           
             self.setText(pp.name)
-            #print("input file:",filename)
-            #print("parent    :",pp.parent)
             mpapath=pp.with_suffix(".mpa")
             #print("mpafile   :",mpapath.exists())
             scalers=self.getScalerData(mpapath)
-            ##print("scalers",scalers)
             self.valueChanged.emit(self.tag,pp)
 
 
@@ -206,7 +191,6 @@ class FilePicker(QTabWidget):
         self.editTACdt=DataField("TAC dt")
         layout.addWidget( self.editTACdt )
         self.editTACdt.setText("%4.1f"%(adata.TAC_interval,))
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editTACdt.valueChanged.connect(self.setCalibData)
         
@@ -214,7 +198,6 @@ class FilePicker(QTabWidget):
         self.editTdist=DataField("Tdist")
         layout.addWidget( self.editTdist )
         self.editTdist.setText("%5.3f"%(adata.target_distance,))
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editTdist.valueChanged.connect(self.setCalibData)
         
@@ -222,7 +205,6 @@ class FilePicker(QTabWidget):
         self.editCgain=DataField("Cgain")
         layout.addWidget( self.editCgain )
         self.editCgain.setText("%3.1f"%(adata.calibration_gain,))
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editCgain.valueChanged.connect(self.setCalibData)
         
@@ -230,7 +212,6 @@ class FilePicker(QTabWidget):
         self.editcutL=DataField("cutL")
         layout.addWidget( self.editcutL )
         self.editcutL.setText("%3.1f"%(adata.L_threshold,))
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editcutL.valueChanged.connect(self.setCalibData)
         
@@ -249,35 +230,27 @@ class FilePicker(QTabWidget):
     def _makeCalibTab(self):
 
         layout=QVBoxLayout()
-        #hlayout=QHBoxLayout()
         layout.addWidget( QLabel("22Na:") )
         self.editNa=FileField("Na")
         layout.addWidget( self.editNa )
-        #layout.addLayout( hlayout )
         layout.addSpacing(5)
         self.editNa.valueChanged.connect(self.setFilePath)
         
-        #hlayout=QHBoxLayout()
         layout.addWidget( QLabel("137Cs:") )
         self.editCs=FileField("Cs")
         layout.addWidget( self.editCs )
-        #layout.addLayout( hlayout )
         layout.addSpacing(5)
         self.editCs.valueChanged.connect(self.setFilePath)
        
-        #hlayout=QHBoxLayout()
         layout.addWidget( QLabel("AmBe:") )
         self.editAmBe=FileField("AmBe")
         layout.addWidget( self.editAmBe )
-        #layout.addLayout( hlayout )
         layout.addSpacing(5)
         self.editAmBe.valueChanged.connect(self.setFilePath)
         
-        #hlayout=QHBoxLayout()
         layout.addWidget( QLabel("TAC:") )
         self.editTAC=FileField("TAC")
         layout.addWidget( self.editTAC )
-        #layout.addLayout( hlayout )
         layout.addSpacing(5)
         self.editTAC.valueChanged.connect(self.setFilePath)
 
@@ -289,11 +262,9 @@ class FilePicker(QTabWidget):
 
     def _makeNE213Tab(self):
         layout=QVBoxLayout()
-        #hlayout=QHBoxLayout()
         layout.addWidget( QLabel("NE213:") )
         self.editNE213=FileField("NE213")
         layout.addWidget( self.editNE213 )
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editNE213.valueChanged.connect(self.setFilePath)
 
@@ -301,15 +272,12 @@ class FilePicker(QTabWidget):
         self.editDefTOF=DataField("TOFchannel")
         layout.addWidget( self.editDefTOF )
         self.editDefTOF.setText("ADC3")
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
-        #self.editDefTOF.valueChanged.connect(self.setFilePath)
 
         layout.addWidget( QLabel("NE213:Tgamma [ns]") )
         self.editTgamma=DataField("Tgamma")
         layout.addWidget( self.editTgamma )
         self.editTgamma.setText("0.0")
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editTgamma.valueChanged.connect(self.setCalibData)
         
@@ -318,11 +286,9 @@ class FilePicker(QTabWidget):
         
     def _makeFCTab(self):
         layout=QVBoxLayout()
-        #hlayout=QHBoxLayout()
         layout.addWidget( QLabel("Fission:") )
         self.editFC=FileField("FC")
         layout.addWidget( self.editFC )
-        #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editFC.valueChanged.connect(self.setFilePath)
         self.fcfiles.setLayout(layout)
@@ -333,14 +299,10 @@ class FilePicker(QTabWidget):
         """
         pack file paths into dict.
         """
-        #print(ident,pathname)
         self.files[ident]=pathname
-        #print(self.files)
         self.fileChanged.emit(len(self.files)) # notify if file count changed
 
     def setFiles(self, files):
-        #self.files=files
-        #print(self.editNa)
         self.editNa.setFile(files['Na'])
         self.editCs.setFile(files['Cs'])
         self.editAmBe.setFile(files['AmBe'])
@@ -354,8 +316,6 @@ class FilePicker(QTabWidget):
         set data from entry field.
         """
         print(ident,data)
-        #self.files[ident]=pathname
-        #print(self.files)
         print(type(data))
         self.dataChanged.emit(str(ident),str(data)) # notify if file count changed
 

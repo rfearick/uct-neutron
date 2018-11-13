@@ -158,6 +158,13 @@ class PlotTreeView(Qt.QTreeView):
         item=self.model().itemFromIndex(index) #get item from index
         if item.data() is not None:
             item.data().openPlot()    # call item.openPlot()
+
+    def searchFig(self, figure):
+        """
+        Search through tree to find item which matches figure
+        """
+
+        return figure
         
         
 

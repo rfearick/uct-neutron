@@ -475,7 +475,7 @@ class CalculatedEventSort(object):
         self.chT0=chT0 # keep copy
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
-        self.cutL=calibration.channel(data.cutL) # convert to channel
+        self.cutL=calibration.channel(data.L_threshold) # convert to channel
         logger.info("chT0, choffset, chTgamma = %5.1f, %5.1f, %5.1f"%(chT0,choffset,chT0-choffset))
         self.start=0
         
@@ -1093,6 +1093,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             logger.info("TAC interval set to %4.1f"%(fdata,))
         elif tag == "cutL":
             d.L_threshold=data
+            logger.info("L threshold set to %4.1f"%(fdata,))
         else:
             logger.error("Invalid input")
         

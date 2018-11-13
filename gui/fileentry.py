@@ -179,6 +179,7 @@ class FilePicker(QTabWidget):
         self.editTACdt=None
         self.editTdist=None
         self.editCgain=None
+        self.editcutL=None
         #self.editTgamma=None
         self.editNa=None
         self.editCs=None
@@ -224,6 +225,14 @@ class FilePicker(QTabWidget):
         #layout.addLayout( hlayout )
         layout.addStretch(1)
         self.editCgain.valueChanged.connect(self.setCalibData)
+        
+        layout.addWidget( QLabel("L threshold [MeVee]") )
+        self.editcutL=DataField("cutL")
+        layout.addWidget( self.editcutL )
+        self.editcutL.setText("%3.1f"%(adata.L_threshold,))
+        #layout.addLayout( hlayout )
+        layout.addStretch(1)
+        self.editcutL.valueChanged.connect(self.setCalibData)
         
         #layout.addWidget( QLabel("Tgamma from TOF[ns]") )
         #self.editTgamma=DataField("Tgamma")

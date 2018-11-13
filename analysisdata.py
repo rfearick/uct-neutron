@@ -91,7 +91,7 @@ class AnalysisData(object, metaclass=Singleton):
     """
     
     __slots__=['speed_of_light','target_distance','target_distance_in_ch','T0',
-               'T0_in_ch','Tgamma','calibration_gain','TAC_interval' ]
+               'T0_in_ch','Tgamma','calibration_gain','TAC_interval', 'L_threshold' ]
     
     def __init__(self):
         self.setDefaults()
@@ -101,5 +101,6 @@ class AnalysisData(object, metaclass=Singleton):
         self.target_distance=9.159 # m
         self.TAC_interval=20.0     # ns
         self.calibration_gain=4.0
+        self.L_threshold=2.5       # MeVee
         self.Tgamma=0.0
         self.T0=0.0

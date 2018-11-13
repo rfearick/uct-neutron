@@ -246,6 +246,12 @@ class EventSource(object):
         returns a ConfigParser object representing the header data
         """
         return self.configdata
+
+    def closeFile(self):
+        if self.f:
+            self.f.close()
+        self.f=0
+        
     
 
 class Histogram(object):
@@ -464,6 +470,7 @@ class Sorter(object):
         print("Nadc",nadc,nadc[0]+nadc[1]+nadc[2]+nadc[3])
         print("unknown1",nunknown1)
         print("unknown2",nunknown2)
+        self.stream.closeFile() # close event stream
         return sortadc
 
     def setExtraSorter( self, sorter, histlist):

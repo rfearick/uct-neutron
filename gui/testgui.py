@@ -327,6 +327,7 @@ def SetupSort(parent):
     #fileNE213="NE213_029.lst"  # 16deg 12C 
 
     filepicker=parent.filepick
+    maxeventcount=parent.maxeventcount
     
     #infile=filepath+fileNE213
     infile=filepicker.files['NE213']
@@ -376,7 +377,7 @@ def SetupSort(parent):
         h21.set_gate('neutrons')
         
     # define sort process
-    S=Sorter( E, histlist)
+    S=Sorter( E, histlist, maxcount=maxeventcount)
 
     # create tree for plots widget
     tree=parent.plotmodel
@@ -735,6 +736,19 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         #self.btnSaveData.setCheckable(True)
         self.btnSaveData.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         toolBar.addWidget(self.btnSaveData)
+
+        toolBar.addSeparator()
+
+        self.maxeventcount=None
+
+        self.lblMaxevent = Qt.QLabel("Max event count",toolBar)
+        toolBar.addWidget(self.lblMaxevent)
+        self.editMaxevent = Qt.QLineEdit(toolBar)
+        self.editMaxevent.setFixedWidth(100)
+        self.editMaxevent.returnPressed.connect(self.setMaxEvent)
+        self.editMaxevent.setText("None")
+        toolBar.addWidget(self.editMaxevent)
+        
         """
         self.btnAutoc = Qt.QToolButton(toolBar)
         self.btnAutoc.setText("correlate")
@@ -1095,6 +1109,17 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             logger.info("L threshold set to %4.1f"%(fdata,))
         else:
             logger.error("Invalid input")
+
+    def setMaxEvent(self):
+        maxevent=self.editMaxevent.text()
+        if maxevent == 0 or maxevent == "None" or maxevent == "none":
+            self.maxeventcount = None
+        else:
+            try:
+                self.maxeventcount = int(maxevent)
+            except:
+                logger.error("Invalid input")
+        #self.editMaxevent.setText("None")
         
             
     def printPlot(self):

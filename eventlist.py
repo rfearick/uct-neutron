@@ -250,9 +250,9 @@ class EventSource(object):
     def closeFile(self):
         if self.f:
             self.f.close()
+            print("file closed")
         self.f=0
         
-    
 
 class Histogram(object):
     """
@@ -401,7 +401,7 @@ class Sorter(object):
         histlist:   List of histograms to sort into.
         gatelist:   List of gates to apply to events (IGNORED FOR NOW).
     """
-    def __init__( self, stream, histlist, gatelist=None ):
+    def __init__( self, stream, histlist, gatelist=None, maxcount=None ):
         self.stream = stream
         self.histlist = histlist
         self.morehist = None
@@ -409,6 +409,7 @@ class Sorter(object):
         self._groups=[]
         self._hists=[]
         self.moresort=None
+        self.maxcount=maxcount
         for h in histlist:
             if h.coincidencegroup in self._groups:
                 i=self._groups.index(h.coincidencegroup)
@@ -425,6 +426,8 @@ class Sorter(object):
         eventstream=self.stream.eventstream()
         #histlist=self.histlist
         # collect stats
+        maxcount=self.maxcount
+        print("maxcount",maxcount)
         ntimer=0
         nrtc=0
         nmark=0
@@ -460,6 +463,7 @@ class Sorter(object):
             else:
                 nunknown2+=1
                 print("huh?")
+            if maxcount is not None and nevent==maxcount: break
 
         t1=time.perf_counter()
         print("Sort: elapsed time ",t1-t0, " s")
@@ -471,6 +475,7 @@ class Sorter(object):
         print("unknown1",nunknown1)
         print("unknown2",nunknown2)
         self.stream.closeFile() # close event stream
+        print("file closed")
         return sortadc
 
     def setExtraSorter( self, sorter, histlist):

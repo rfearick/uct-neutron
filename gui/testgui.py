@@ -651,10 +651,6 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         'TAC':       TDC slope in ch/ns
         'Tgamma':    Time of gamma burst in raw TOF, used to calc T0 
         """
-        self.freezeState = 0
-        self.changeState = 0
-        self.averageState = 0
-        self.autocState = 0
         self.mainwin=Qt.QSplitter(self)
         self.logwin=Qt.QListWidget(self)
         vlayout=Qt.QVBoxLayout()
@@ -711,19 +707,19 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         sb.showMessage("Status=1")
 
         # !! use addAction instead ?
-        self.btnFreeze = Qt.QToolButton(toolBar)
-        self.btnFreeze.setText("Open expt")
-        self.btnFreeze.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
-        self.btnFreeze.setCheckable(True)
-        self.btnFreeze.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
-        self.btnFreeze.setToolTip("Open experiment file")
-        toolBar.addWidget(self.btnFreeze)
+        self.btnOpenExpt = Qt.QToolButton(toolBar)
+        self.btnOpenExpt.setText("Open expt")
+        self.btnOpenExpt.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
+        self.btnOpenExpt.setCheckable(True)
+        self.btnOpenExpt.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        self.btnOpenExpt.setToolTip("Open experiment file")
+        toolBar.addWidget(self.btnOpenExpt)
         
-        self.btnMode = Qt.QToolButton(toolBar)
-        self.btnMode.setText("Save expt")
-        self.btnMode.setIcon(self.style().standardIcon(Qt.QStyle.SP_DriveFDIcon))
-        self.btnMode.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
-        toolBar.addWidget(self.btnMode)
+        self.btnSaveExpt = Qt.QToolButton(toolBar)
+        self.btnSaveExpt.setText("Save expt")
+        self.btnSaveExpt.setIcon(self.style().standardIcon(Qt.QStyle.SP_DriveFDIcon))
+        self.btnSaveExpt.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        toolBar.addWidget(self.btnSaveExpt)
         
         self.btnPrint = Qt.QToolButton(toolBar)
         self.btnPrint.setText("Print")
@@ -732,13 +728,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         toolBar.addWidget(self.btnPrint)
 
         
-        self.btnAvge = Qt.QToolButton(toolBar)
-        self.btnAvge.setText("data")
-        #self.btnAvge.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
-        self.btnAvge.setIcon(Qt.QIcon("drive.png"))
-        #self.btnAvge.setCheckable(True)
-        self.btnAvge.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
-        toolBar.addWidget(self.btnAvge)
+        self.btnSaveData = Qt.QToolButton(toolBar)
+        self.btnSaveData.setText("data")
+        #self.btnSaveData.setIcon(Qt.QIcon(Qt.QPixmap(icons.avge)))
+        self.btnSaveData.setIcon(Qt.QIcon("drive.png"))
+        #self.btnSaveData.setCheckable(True)
+        self.btnSaveData.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
+        toolBar.addWidget(self.btnSaveData)
         """
         self.btnAutoc = Qt.QToolButton(toolBar)
         self.btnAutoc.setText("correlate")
@@ -783,9 +779,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.filepick.fileChanged.connect(self.setFilePaths)
         self.filepick.dataChanged.connect(self.setAnalysisData)
         self.filepick.valueChanged.connect(self.setFilePaths)
-        self.btnFreeze.clicked.connect(self.openFile)
-        self.btnMode.clicked.connect(self.saveFile)
-        self.btnAvge.clicked.connect(self.saveDataAsHDF)
+        self.btnOpenExpt.clicked.connect(self.openFile)
+        self.btnSaveExpt.clicked.connect(self.saveFile)
+        self.btnSaveData.clicked.connect(self.saveDataAsHDF)
         self.bthread = None
 
     def makeLabel(self, title):

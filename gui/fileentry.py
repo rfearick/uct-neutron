@@ -315,8 +315,8 @@ class FilePicker(QTabWidget):
         """
         set data from entry field.
         """
-        print(ident,data)
-        print(type(data))
+        #print(ident,data)
+        #print(type(data))
         self.dataChanged.emit(str(ident),str(data)) # notify if file count changed
 
         

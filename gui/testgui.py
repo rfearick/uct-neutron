@@ -53,7 +53,7 @@ matplotlib.use('Qt5Agg')
 matplotlib.rcParams['toolbar'] = 'toolmanager'
 import matplotlib.pyplot as plt
 import matplotlib.path as path
-from matplotlib.widgets import LassoSelector
+from matplotlib.widgets import LassoSelector, PolygonSelector
 import configparser
 import logging
 
@@ -175,9 +175,11 @@ class SpectrumPlotter(Qt.QObject):
         # lasso disappears if window closed and reopened. Must check super
         if 1:#self.fig is None:
             if h.dims==2:
-                from polygonlasso import MyLassoSelector
+                #from polygonlasso import MyLassoSelector
                 ax=fig.gca()
-                self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
+                #self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
+                self.lasso=PolygonSelector(ax,self.select2dGate,useblit=False,
+                    lineprops=dict(color='c', linestyle='-', linewidth=2, alpha=0.5))
                 #print("lasso")
         self.fig=nfig
         self.figure=fig
@@ -230,11 +232,11 @@ class SpectrumPlotter(Qt.QObject):
             x,xl=self._getCalibratedScale(adc,h,xl,h.size1) ##xl->self.xname?
             if x is None:
                 plt.plot(data,drawstyle='steps-mid')
-                plt.ylabel(yl+' '+self.yname)
+                plt.ylabel(yl+' -  '+self.yname)
                 plt.xlabel(self.xname)
             else:
                 plt.plot(x,data,drawstyle='steps-mid')
-                plt.ylabel(yl+' '+self.yname)
+                plt.ylabel(yl+' -  '+self.yname)
                 plt.xlabel(xl)
                 
         else:
@@ -394,9 +396,9 @@ def SetupSort(parent):
         h3t=Histogram(E, GROUP_NE213, 'ADC3', 1024)
         hE=Histogram(E, GROUP_NE213, 'Cal3', 1024, label="En", calib=(250.0/1024,"En [MeV]"))
         hv=Histogram(E, GROUP_NE213, 'Cal3', 1024, label="vn", calib=(0.001,"beta_n"))
-        CreatePlot( parent, tree, branch, h3t, "Calc tof" )
-        CreatePlot( parent, tree, branch, hE, "Calc E" )
-        CreatePlot( parent, tree, branch, hv, "Calc v" )
+        CreatePlot( parent, tree, branch, h3t, "Calc tof", yname="tof" )
+        CreatePlot( parent, tree, branch, hE, "Calc E", yname="n Energy" )
+        CreatePlot( parent, tree, branch, hv, "Calc v", yname="v_n" )
         histlist2=[h3t,hE,hv]
         c=CalculatedEventSort(None)
         S.setExtraSorter(c.sort, histlist2)
@@ -745,7 +747,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         toolBar.addWidget(self.lblMaxevent)
         self.editMaxevent = Qt.QLineEdit(toolBar)
         self.editMaxevent.setFixedWidth(100)
-        self.editMaxevent.returnPressed.connect(self.setMaxEvent)
+        self.editMaxevent.editingFinished.connect(self.setMaxEvent)
         self.editMaxevent.setText("None")
         toolBar.addWidget(self.editMaxevent)
         
@@ -1112,6 +1114,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     def setMaxEvent(self):
         maxevent=self.editMaxevent.text()
+        print("maxevent",maxevent)
         if maxevent == 0 or maxevent == "None" or maxevent == "none":
             self.maxeventcount = None
         else:

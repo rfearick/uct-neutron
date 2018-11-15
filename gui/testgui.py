@@ -53,7 +53,7 @@ matplotlib.use('Qt5Agg')
 matplotlib.rcParams['toolbar'] = 'toolmanager'
 import matplotlib.pyplot as plt
 import matplotlib.path as path
-from matplotlib.widgets import LassoSelector, PolygonSelector
+from matplotlib.widgets import SpanSelector, PolygonSelector
 import configparser
 import logging
 
@@ -174,13 +174,16 @@ class SpectrumPlotter(Qt.QObject):
         fig.canvas.draw_idle()
         # lasso disappears if window closed and reopened. Must check super
         if 1:#self.fig is None:
+            ax=fig.gca()
             if h.dims==2:
                 #from polygonlasso import MyLassoSelector
-                ax=fig.gca()
                 #self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
                 self.lasso=PolygonSelector(ax,self.select2dGate,useblit=False,
                     lineprops=dict(color='c', linestyle='-', linewidth=2, alpha=0.5))
                 #print("lasso")
+            else:
+                self.lasso=SpanSelector(ax,self.select1dregion,"horizontal",
+                rectprops = dict(facecolor='blue', alpha=0.5))
         self.fig=nfig
         self.figure=fig
         fig.canvas.manager.window.closing.connect(self.closed)
@@ -193,7 +196,15 @@ class SpectrumPlotter(Qt.QObject):
         fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
         self.openplotlist.append(self)
 
-
+    def select1dregion(self,lo,hi):
+        h=self.histo
+        x,xl=self._getCalibratedScale(h.adc1,h,"",h.size1)
+        print("lohi",lo,hi)
+        ilo,ihi=np.searchsorted(x,(lo,hi))
+        print(ilo,ihi)
+        mean=np.sum(x[ilo:ihi]*h.data[ilo:ihi])/np.sum(h.data[ilo:ihi])
+        print("pos",mean)
+        plt.axvline(mean)
 
     def select2dGate(self, verts):
         print(verts)

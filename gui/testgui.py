@@ -173,7 +173,7 @@ class SpectrumPlotter(Qt.QObject):
         self.opened=True
         fig.canvas.draw_idle()
         # lasso disappears if window closed and reopened. Must check super
-        if 1:#self.fig is None:
+        if not self.unsorted:#self.fig is None:
             ax=fig.gca()
             if h.dims==2:
                 #from polygonlasso import MyLassoSelector

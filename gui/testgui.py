@@ -93,6 +93,28 @@ class ListTool(ToolBase):
 #==============================
 
 
+def generatepathname( basename, extension=".dat" ):
+    """
+    Generate a new unique  file name from base name + sequence number
+
+    Parameters
+    ----------
+
+    basename:   str, base name from which filename is constructed
+    extension:  optional str, file name extension
+
+    Returns
+    -------
+
+    filename:   str, full path for generated file name
+    """
+    i=1
+    filename="{}{}{}".format(basename, str(i).zfill(4), extension)
+    while os.path.exists(filename):
+        i += 1
+        filename = "{}{}{}".format(basename, str(i).zfill(4), extension)
+    return filename
+
     
 class SpectrumPlotter(Qt.QObject):
     """
@@ -130,7 +152,12 @@ class SpectrumPlotter(Qt.QObject):
                     x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
                     if x is None:
                         x=np.arange(0.0,float(h.size1))
-                    print("# "+xl+", "+adc+" data")
+                    print("# "+xl+", "+adc+" data", p.histo.label1)
+                    print("figure found",p.histo.adc1,p.histo.label1)
+                    filename,_=Qt.QFileDialog.getSaveFileName(None,'Save file',
+                                                          '.',"Text data (*.dat)")
+                    print(filename)
+                    if filename == '': return
                     for j in range(5):
                         print(x[j], p.histo.data[j])
 

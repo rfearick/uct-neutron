@@ -24,6 +24,7 @@ SpectrumPlot -- handle start of sort/interaction with update timer
 
 import sys
 sys.path.append("..") # for eventlist.py
+import os
 from eventlist import Histogram, Sorter, EventSource
 from eventlist import EventFlags, Gate2d, gatelist
 
@@ -158,8 +159,20 @@ class SpectrumPlotter(Qt.QObject):
                                                           '.',"Text data (*.dat)")
                     print(filename)
                     if filename == '': return
-                    for j in range(5):
-                        print(x[j], p.histo.data[j])
+                    #if os.path.exists(filename):
+                        # code here to prevent overwrite
+                        # NOT NEEDED ON: Mac
+                        #msgExists=Qt.QMessageBox()
+                        #msgExists.setText("The file already exists")
+                        #msgExists.setInformativeText("Do you want to overwrite?")
+                        #msgExists.setStandardButtons(Qt.QMessageBox.Save|Qt.QMessageBox.Discard)
+                        #msgExists.setDefaultButton(Qt.QMessageBox.Discard)
+                        #ret=msgExists.exec()
+                        #if ret ==  Qt.QMessageBox.Discard:
+                        #    return
+                    with open(filename,"w") as f:
+                        for j in range(len(x)):
+                            print(x[j], p.histo.data[j], file=f)
 
 
     def __init__( self, parent, h, tree, name, xname=None, yname=None  ):

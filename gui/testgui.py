@@ -167,9 +167,9 @@ class SpectrumPlotter(Qt.QObject):
                         #ret=msgExists.exec()
                         #if ret ==  Qt.QMessageBox.Discard:
                         #    return
-                    printtofile(p, filename)
+                    self.printtofile(p, filename)
                             
-        def printtofile(plotter, filename):
+        def printtofile(self, plotter, filename):
             """
             print histo to file
             """

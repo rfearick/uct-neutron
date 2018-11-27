@@ -143,21 +143,18 @@ class SpectrumPlotter(Qt.QObject):
         description = 'Dump Tool'
 
         def trigger(self, *args, **kwargs):
+            """
+            action if button triggered
+            """
             print("Listing the spectrum")
             print(self.figure)
             for p in SpectrumPlotter.openplotlist:
                 if p.figure==self.figure:
-                    print("figure found",p.histo.adc1,p.histo.label1)
-                    h=p.histo
-                    adc=h.adc1
-                    x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
-                    if x is None:
-                        x=np.arange(0.0,float(h.size1))
-                    print("# "+xl+", "+adc+" data", p.histo.label1)
-                    print("figure found",p.histo.adc1,p.histo.label1)
+                    #print("figure found",p.histo.adc1,p.histo.label1)
+                    #print("# "+xl+", "+adc+" data", p.histo.label1)
                     filename,_=Qt.QFileDialog.getSaveFileName(None,'Save file',
                                                           '.',"Text data (*.dat)")
-                    print(filename)
+                    #print(filename)
                     if filename == '': return
                     #if os.path.exists(filename):
                         # code here to prevent overwrite
@@ -170,9 +167,21 @@ class SpectrumPlotter(Qt.QObject):
                         #ret=msgExists.exec()
                         #if ret ==  Qt.QMessageBox.Discard:
                         #    return
-                    with open(filename,"w") as f:
-                        for j in range(len(x)):
-                            print(x[j], p.histo.data[j], file=f)
+                    printtofile(p, filename)
+                            
+        def printtofile(plotter, filename):
+            """
+            print histo to file
+            """
+            p=plotter
+            h=p.histo
+            adc=h.adc1
+            x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
+            if x is None:
+                x=np.arange(0.0,float(h.size1))
+            with open(filename,"w") as f:
+                for j in range(len(x)):
+                    print(x[j], p.histo.data[j], file=f)
 
 
     def __init__( self, parent, h, tree, name, xname=None, yname=None  ):
@@ -926,6 +935,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
         # start sort
         self.bthread.start()
+        self.bthread.setPriority(0)
         logger.info("Start background task: "+self.sorttype)
         #print('thread',self.bthread.isRunning())
 

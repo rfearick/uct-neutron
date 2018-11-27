@@ -71,27 +71,7 @@ import time
 
 plt.ion()       # turn on interactive mode of matplotlib
 
-# =================
 from matplotlib.backend_tools import ToolBase, ToolToggleBase
-
-# example tool added to toolbar.
-
-class ListTool(ToolBase):
-    '''List all the tools controlled by the `ToolManager`'''
-    # keyboard shortcut
-    default_keymap = 'm'
-    description = 'List Tool'
-
-    def trigger(self, *args, **kwargs):
-        print("Listing the spectrum")
-        print(self.figure)
-        for p in openplotlist:
-            if p.figure==self.figure:
-                print("figure found",p.histo.adc1,p.histo.label1)
-                for j in range(5):
-                    print(j, p.histo.data[j])
-
-#==============================
 
 
 def generatepathname( basename, extension=".dat" ):
@@ -237,9 +217,6 @@ class SpectrumPlotter(Qt.QObject):
         self.figure=fig
         fig.canvas.manager.window.closing.connect(self.closed)
         if self.unsorted: self.timer.start()
-        # Add the custom tools that we created  ========
-        #print("canvas",fig.canvas.manager,matplotlib.rcParams['toolbar'])
-        #print("canvas",fig.canvas.manager.toolbar)
         fig.canvas.manager.toolbar.add_toolitem(
             'Dump', "mygroup",0, "drive.png", "DumpTool",False)
         fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
@@ -257,8 +234,6 @@ class SpectrumPlotter(Qt.QObject):
 
     def select2dGate(self, verts):
         print(verts)
-        #text,ok=Qt.QInputDialog.getText(self.parent, "Gates",
-        #                                "Enter gate name:", Qt.QLineEdit.Normal, "")
         text,ok=Qt.QInputDialog.getItem(self.parent, "Gates",
                                         "Select gate:",
                                         ["neutrons","gammas"], 0, False)
@@ -382,7 +357,6 @@ def SetupSort(parent):
     At some point this will change; there should be some sort builder program.
     """
     global ne213pass
-    #filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
     #fileNE213="NE213_025.lst"  # 0deg natLi
     #fileNE213="NE213_026.lst"  # 0deg 12C 
     #fileNE213="NE213_028.lst"  # 16deg natLi
@@ -404,16 +378,6 @@ def SetupSort(parent):
     logger.info("cutL at 2.5 Mev in ch %6.2f"%(calibration.channel(2.5),))
     
     # check if TOF start position calculated
-    """
-    TOFadc=filepicker.editDefTOF.text()
-    print("ADC for TOF is "+TOFadc)
-    TOFTgamma=filepicker.editTgamma.text()
-    try:
-        Tgamma=float(TOFTgamma)
-    except:
-        print("Tgamma error")
-        Tgamma=0.0
-    """
     analysisdata=AnalysisData()
     Tgamma=analysisdata.Tgamma
     TOFStartSet=Tgamma != 0.0

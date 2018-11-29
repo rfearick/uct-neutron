@@ -37,6 +37,8 @@ See Safari et al., ArXiv 1610.09185
 This simple demo presents 3 different calibration spectra and allows the user
 to select the calibration points. When all calibration points are selected, the 
 calibration is calculated via linear regression, and plotted in a 4th view.
+
+Assumes all gamma calibration histos are same len.  
 """
 
 """
@@ -139,7 +141,7 @@ class Calibrator(object):
         """
         Calibrate the TAC spectrum by linear regression on the peak positions 
         in the histogram, which are determined by the TAC calibrator.
-        Spacing of peaks is 20.0 ns
+        Spacing of peaks is AnalysisData.TAC_interval in ns
         input: data -- data array from histogram hTAC
         return: tacslope, tacintercept, peakpos
                 slope, intercept in channel/ns,channel
@@ -202,7 +204,8 @@ class Calibrator(object):
             slope, intercept -- channel/MeVee,channel
         """
         slope, intercept,r,p,stderr=linregress(edges,chans)
-        calibration=(slope*2,intercept*2) # convert to 1024 ch
+        divisor=self.hNa.divisor1
+        calibration=(slope*divisor,intercept*divisor) # convert to 1024 ch
         calgamma=calibration
         d=AnalysisData()
         gain=d.calibration_gain
@@ -313,7 +316,8 @@ class CalibrationPlotter(object):
         """
         Plot TAC spectrum and calibration line
         """
-        taccalstep=20.0 #ns
+        d=AnalysisData()
+        taccalstep=d.TAC_interval #ns
         f2=plt.figure("TAC calibration")
         f2.canvas.draw_idle()
         data,yl,xl=self.calibrator.hTAC.get_plotlabels()
@@ -388,6 +392,11 @@ class CalibrationPlotter(object):
         this also has to handle adjustment of calibration when calibrated.
         gets tricky for AmBe.
         """
+        #tb=self.f1.canvas.manager.toolbar
+        #tm=self.f1.canvas.manager.toolmanager
+        #print('tbmode',tb)
+        #print('tmmode',tm.active_toggle)
+        #print(tm.tools)
         ax=event.inaxes
         xdata=event.xdata
         cal=self.calibrator.calibration

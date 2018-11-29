@@ -303,12 +303,13 @@ class FilePicker(QTabWidget):
         self.fileChanged.emit(len(self.files)) # notify if file count changed
 
     def setFiles(self, files):
-        self.editNa.setFile(files['Na'])
-        self.editCs.setFile(files['Cs'])
-        self.editAmBe.setFile(files['AmBe'])
-        self.editTAC.setFile(files['TAC'])
-        self.editNE213.setFile(files['NE213'])
-        self.editFC.setFile(files['FC'])
+        fkey=files.keys()
+        if 'Na' in fkey: self.editNa.setFile(files['Na'])
+        if 'Cs' in fkey: self.editCs.setFile(files['Cs'])
+        if 'AmBe' in fkey: self.editAmBe.setFile(files['AmBe'])
+        if 'TAC' in fkey: self.editTAC.setFile(files['TAC'])
+        if 'NE213' in fkey: self.editNE213.setFile(files['NE213'])
+        if 'FC' in fkey: self.editFC.setFile(files['FC'])
 
     @pyqtSlot('QString','QString')
     def setCalibData(self, ident, data):

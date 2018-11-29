@@ -52,6 +52,7 @@ import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 matplotlib.rcParams['toolbar'] = 'toolmanager'
+#matplotlib.rcParams['toolbar'] = 'toolbar2'
 import matplotlib.pyplot as plt
 import matplotlib.path as path
 from matplotlib.widgets import SpanSelector, PolygonSelector
@@ -1122,7 +1123,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                 Tcon=d.target_distance/d.speed_of_light  # in ns
                 T0=d.Tgamma+Tcon
                 d.T0=T0
-                logger.info("Tdist set to %5.3f, Tcon=%5.1f, T0=%5.1f"&(fdata,Tcon,T0))
+                logger.info("Tdist set to %5.3f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
             else:
                 logger.info("Tdist set to %5.3f"%(fdata,))
         elif tag == 'Cgain':
@@ -1163,4 +1164,5 @@ if __name__=="__main__":
     demo.setWindowTitle("The Amazing List File Sorter")
     demo.show()
     #demo.startSorting()
+    #app.aboutToQuit.connect(demo.closeAll)
     sys.exit(app.exec_())

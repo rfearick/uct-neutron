@@ -52,7 +52,7 @@ import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 matplotlib.rcParams['toolbar'] = 'toolmanager'
-#matplotlib.rcParams['toolbar'] = 'toolbar2'
+matplotlib.rcParams['toolbar'] = 'toolbar2'
 import matplotlib.pyplot as plt
 import matplotlib.path as path
 from matplotlib.widgets import SpanSelector, PolygonSelector
@@ -97,6 +97,34 @@ def generatepathname( basename, extension=".dat" ):
         filename = "{}{}{}".format(basename, str(i).zfill(4), extension)
     return filename
 
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
+class SlangToolbar2(NavigationToolbar2QT):
+    toolitems=(        ('Home', 'Reset original view', 'home', 'home'),
+)
+    def __init__(self,canvas, parent):
+        NavigationToolbar2QT.__init__(self, canvas, parent)
+    def _init_toolbar(self):
+        print("STB2 ************")
+        self.basedir = os.path.join(matplotlib.rcParams['datapath'], 'images')
+
+        for text, tooltip_text, image_file, callback in self.toolitems:
+            if text is None:
+                self.addSeparator()
+            else:
+                a = self.addAction(self._icon(image_file + '.png'),
+                                   text, getattr(self, callback))
+                print(a)
+                self._actions[callback] = a
+                if callback in ['zoom', 'pan']:
+                    a.setCheckable(True)
+                if tooltip_text is not None:
+                    a.setToolTip(tooltip_text)
+                if text == 'Subplots':
+                    a = self.addAction(self._icon("qt4_editor_options.png"),
+                                       'Customize', self.edit_parameters)
+                    a.setToolTip('Edit axis, curve and image parameters')
+    def home(self):
+        pass
     
 class SpectrumPlotter(Qt.QObject):
     """
@@ -197,6 +225,12 @@ class SpectrumPlotter(Qt.QObject):
         """
         h=self.histo
         fig=plt.figure(self.branchname+' - '+self.name)
+        #fig.canvas.manager.toolbar=SlangToolbar2(fig.canvas, self.parent)
+        tb=fig.canvas.manager.toolbar
+        #tb.toolitems.pop(6)
+        #tb.toolitems.pop(6)
+        print(tb.toolitems)
+        tb.addAction(Qt.QIcon("drive.png"), "dump", self.home) 
         nfig=fig.number
         print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
         self.drawPlot(h)
@@ -218,10 +252,12 @@ class SpectrumPlotter(Qt.QObject):
         self.figure=fig
         fig.canvas.manager.window.closing.connect(self.closed)
         if self.unsorted: self.timer.start()
-        fig.canvas.manager.toolbar.add_toolitem(
-            'Dump', "mygroup",0, "drive.png", "DumpTool",False)
-        fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
+        #fig.canvas.manager.toolbar.add_toolitem(
+        #    'Dump', "mygroup",0, "drive.png", "DumpTool",False)
+        #fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
         self.openplotlist.append(self)
+    def home(self):
+        print("enter home")
 
     def select1dregion(self,lo,hi):
         h=self.histo

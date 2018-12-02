@@ -397,6 +397,8 @@ class CalibrationPlotter(object):
         #print('tbmode',tb)
         #print('tmmode',tm.active_toggle)
         #print(tm.tools)
+        #if 'pan' in tm.active_toggle['default']:
+        #    return
         ax=event.inaxes
         xdata=event.xdata
         cal=self.calibrator.calibration

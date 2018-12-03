@@ -281,7 +281,7 @@ class CalibrationPlotter(object):
             calibrated=True
         else:
             calibration=(None,None)
-        self.f1=plt.figure("Gamma calibration",(8,8))
+        self.f1=plt.figure("Gamma calibration",(8,8), constrained_layout=True)
         self.f1.canvas.draw_idle()
         ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
         ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
@@ -318,7 +318,7 @@ class CalibrationPlotter(object):
         """
         d=AnalysisData()
         taccalstep=d.TAC_interval #ns
-        f2=plt.figure("TAC calibration")
+        f2=plt.figure("TAC calibration", constrained_layout=True)
         f2.canvas.draw_idle()
         data,yl,xl=self.calibrator.hTAC.get_plotlabels()
         tacslope,tacintercept,peakpos=self.calibrator.calibrateTAC(data)

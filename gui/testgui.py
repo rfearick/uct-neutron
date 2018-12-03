@@ -204,18 +204,6 @@ class SpectrumPlotter(Qt.QObject):
         self.drawPlot(h)
         self.opened=True
         fig.canvas.draw_idle()
-        # lasso disappears if window closed and reopened. Must check super
-        if not self.unsorted:#self.fig is None:
-            ax=fig.gca()
-            if h.dims==2:
-                #from polygonlasso import MyLassoSelector
-                #self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
-                self.lasso=PolygonSelector(ax,self.select2dGate,useblit=False,
-                    lineprops=dict(color='c', linestyle='-', linewidth=2, alpha=0.5))
-                #print("lasso")
-            else:
-                self.lasso=SpanSelector(ax,self.select1dregion,"horizontal",
-                rectprops = dict(facecolor='blue', alpha=0.5))
         self.fig=nfig
         self.figure=fig
         fig.canvas.manager.window.closing.connect(self.closed)
@@ -243,19 +231,67 @@ class SpectrumPlotter(Qt.QObject):
         a.setToolTip("Save histo data to file")
         
     def _select_roi(self):
-        print("select roi")
+        #print("select roi")
         if self._active == 'roi':
-            print("exit roi")
+            #print("exit roi")
             self._active=None
             self._actions['roi'].setChecked(False)
+            self.lasso=None
         else:
-            print("enter roi")
+            #print("enter roi")
             self._active='roi'
             self._actions['roi'].setChecked(True)
-        
+            # lasso disappears if window closed and reopened. Must check super
+            if not self.unsorted:#self.fig is None:
+                ax=self.figure.gca()
+                h=self.histo
+                if h.dims==2:
+                    #from polygonlasso import MyLassoSelector
+                    #self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
+                    self.lasso=PolygonSelector(ax,self.select2dGate,useblit=False,
+                            lineprops=dict(color='c', linestyle='-', linewidth=2, alpha=0.5))
+                    #print("lasso")
+                else:
+                    self.lasso=SpanSelector(ax,self.select1dregion,"horizontal",
+                            rectprops = dict(facecolor='blue', alpha=0.5))
+       
     def _save_histo(self):
-        print("enter savehisto")
+        #print("enter savehisto")
+        print("Listing the spectrum")
+        #print(self.figure)
+        for p in SpectrumPlotter.openplotlist:
+            if p.figure==self.figure:
+                filename,_=Qt.QFileDialog.getSaveFileName(None,'Save file',
+                                                      '.',"Text data (*.dat)")
+                #print(filename)
+                if filename == '': return
+                #if os.path.exists(filename):
+                    # code here to prevent overwrite
+                    # NOT NEEDED ON: Mac
+                    #msgExists=Qt.QMessageBox()
+                    #msgExists.setText("The file already exists")
+                    #msgExists.setInformativeText("Do you want to overwrite?")
+                    #msgExists.setStandardButtons(Qt.QMessageBox.Save|Qt.QMessageBox.Discard)
+                    #msgExists.setDefaultButton(Qt.QMessageBox.Discard)
+                    #ret=msgExists.exec()
+                    #if ret ==  Qt.QMessageBox.Discard:
+                    #    return
+                self.printtofile(filename)
 
+    def printtofile(self, filename):
+        """
+        print histo to file
+        """
+        p=self
+        h=p.histo
+        adc=h.adc1
+        x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
+        if x is None:
+            x=np.arange(0.0,float(h.size1))
+        with open(filename,"w") as f:
+            for j in range(len(x)):
+                print(x[j], p.histo.data[j], file=f)
+                    
     def select1dregion(self,lo,hi):
         h=self.histo
         x,xl=self._getCalibratedScale(h.adc1,h,"",h.size1)
@@ -265,6 +301,14 @@ class SpectrumPlotter(Qt.QObject):
         mean=np.sum(x[ilo:ihi]*h.data[ilo:ihi])/np.sum(h.data[ilo:ihi])
         print("pos",mean)
         plt.axvline(mean)
+        if h.dims==1 and h.adc1=="ADC3":
+            # update TOF gamma
+            print("update Tgamma")
+            if 'TAC' in self.parent.calibration.keys():
+                print("update")
+                self.parent.filepick.editTgamma.setText("%7.3f"%(mean,))
+                self.parent.setAnalysisData("Tgamma", mean)
+                
 
     def select2dGate(self, verts):
         print(verts)
@@ -769,7 +813,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.btnOpenExpt = Qt.QToolButton(toolBar)
         self.btnOpenExpt.setText("Open expt")
         self.btnOpenExpt.setIcon(Qt.QIcon(Qt.QPixmap(icons.stopicon)))
-        self.btnOpenExpt.setCheckable(True)
+        #self.btnOpenExpt.setCheckable(True)
         self.btnOpenExpt.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         self.btnOpenExpt.setToolTip("Open list of experiment file names")
         toolBar.addWidget(self.btnOpenExpt)
@@ -1140,7 +1184,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             
         d=AnalysisData()
         if tag == 'Tgamma':
-            #print("d",d.Tgamma)
+            print("d",d.Tgamma)
             d.Tgamma=fdata
             if 'TAC' in self.calibration.keys():
                 Tcon=d.target_distance/d.speed_of_light  # in ns

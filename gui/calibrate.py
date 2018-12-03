@@ -4,12 +4,6 @@ if platform.system()=="Darwin":
     import matplotlib
     matplotlib.use("Qt5Agg")
 
-filepath="../../../All raw data and analyses from iTL neutrons 2009/100MeV/NE213/"
-fileNa="NE213_032.lst"
-fileCs="NE213_034.lst"
-fileAmBe="NE213_035.lst"
-fileTAC="NE213_037.lst"
-
 from eventlist import *
 
 import numpy as np
@@ -39,20 +33,6 @@ to select the calibration points. When all calibration points are selected, the
 calibration is calculated via linear regression, and plotted in a 4th view.
 
 Assumes all gamma calibration histos are same len.  
-"""
-
-"""
-# use 3 calibration runs for demo, for 3 sources.
-infileCs="../NE213 100 MeV data/NE213_019_137Cs.lst"
-infileNa="../NE213 100 MeV data/NE213_017_22Na.lst"
-infileAmBe="../NE213 100 MeV data/NE213_020_AmBe.lst"
-# add in TAC
-infileTAC="../NE213 100 MeV data/NE213_022_TACcal.lst"
-
-infileCs=filepath+fileCs
-infileNa=filepath+fileNa
-infileAmBe=filepath+fileAmBe
-infileTAC=filepath+fileTAC
 """
 
 # calibration data

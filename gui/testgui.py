@@ -97,34 +97,6 @@ def generatepathname( basename, extension=".dat" ):
         filename = "{}{}{}".format(basename, str(i).zfill(4), extension)
     return filename
 
-from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
-class SlangToolbar2(NavigationToolbar2QT):
-    toolitems=(        ('Home', 'Reset original view', 'home', 'home'),
-)
-    def __init__(self,canvas, parent):
-        NavigationToolbar2QT.__init__(self, canvas, parent)
-    def _init_toolbar(self):
-        print("STB2 ************")
-        self.basedir = os.path.join(matplotlib.rcParams['datapath'], 'images')
-
-        for text, tooltip_text, image_file, callback in self.toolitems:
-            if text is None:
-                self.addSeparator()
-            else:
-                a = self.addAction(self._icon(image_file + '.png'),
-                                   text, getattr(self, callback))
-                print(a)
-                self._actions[callback] = a
-                if callback in ['zoom', 'pan']:
-                    a.setCheckable(True)
-                if tooltip_text is not None:
-                    a.setToolTip(tooltip_text)
-                if text == 'Subplots':
-                    a = self.addAction(self._icon("qt4_editor_options.png"),
-                                       'Customize', self.edit_parameters)
-                    a.setToolTip('Edit axis, curve and image parameters')
-    def home(self):
-        pass
     
 class SpectrumPlotter(Qt.QObject):
     """
@@ -146,6 +118,7 @@ class SpectrumPlotter(Qt.QObject):
     class nDumpTool(ToolBase):
         """
         Dump listing of spectrum to file
+        Uses: toolmanager
         """
         # keyboard shortcut
         default_keymap = 'd'
@@ -224,13 +197,8 @@ class SpectrumPlotter(Qt.QObject):
         If sorting in progress, starts a timer to update plot at intervals.
         """
         h=self.histo
-        fig=plt.figure(self.branchname+' - '+self.name)
-        #fig.canvas.manager.toolbar=SlangToolbar2(fig.canvas, self.parent)
-        tb=fig.canvas.manager.toolbar
-        #tb.toolitems.pop(6)
-        #tb.toolitems.pop(6)
-        print(tb.toolitems)
-        tb.addAction(Qt.QIcon("drive.png"), "dump", self.home) 
+        fig=plt.figure(self.branchname+' - '+self.name, constrained_layout=True)
+        self._initToolbar(fig)
         nfig=fig.number
         print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
         self.drawPlot(h)
@@ -256,8 +224,37 @@ class SpectrumPlotter(Qt.QObject):
         #    'Dump', "mygroup",0, "drive.png", "DumpTool",False)
         #fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
         self.openplotlist.append(self)
-    def home(self):
-        print("enter home")
+
+    def _initToolbar(self, fig):
+        """
+        Add our icons to the toolbar
+        """
+        self._actions={}
+        self._active=None
+        tb=fig.canvas.manager.toolbar
+        tb.addSeparator()
+        a=tb.addAction(Qt.QIcon("select_roi.png"), "roi", self._select_roi)
+        a.setCheckable(True)
+        self._actions["roi"]=a
+        a.setToolTip("Select region of interest")
+        a=tb.addAction(Qt.QIcon("save_histo.png"), "saveh", self._save_histo)
+        #a.setCheckable(True)
+        self._actions["saveh"]=a
+        a.setToolTip("Save histo data to file")
+        
+    def _select_roi(self):
+        print("select roi")
+        if self._active == 'roi':
+            print("exit roi")
+            self._active=None
+            self._actions['roi'].setChecked(False)
+        else:
+            print("enter roi")
+            self._active='roi'
+            self._actions['roi'].setChecked(True)
+        
+    def _save_histo(self):
+        print("enter savehisto")
 
     def select1dregion(self,lo,hi):
         h=self.histo

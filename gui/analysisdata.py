@@ -104,3 +104,15 @@ class AnalysisData(object, metaclass=Singleton):
         self.L_threshold=2.5       # MeVee
         self.Tgamma=0.0
         self.T0=0.0
+
+    def getData(self):
+        data={}
+        for d in AnalysisData.__slots__:
+            v=getattr(self, d, None)
+            if v is not None:
+                data[d]=v
+        return data
+
+    def setData(self, data):
+        for d in data.keys():
+            setattr(self, d, float(data[d]))

@@ -236,6 +236,12 @@ class FilePicker(QTabWidget):
         layout.addSpacing(5)
         self.editNa.valueChanged.connect(self.setFilePath)
         
+        layout.addWidget( QLabel("60Co:") )
+        self.editCo=FileField("Co")
+        layout.addWidget( self.editCo )
+        layout.addSpacing(5)
+        self.editCo.valueChanged.connect(self.setFilePath)
+       
         layout.addWidget( QLabel("137Cs:") )
         self.editCs=FileField("Cs")
         layout.addWidget( self.editCs )
@@ -305,12 +311,23 @@ class FilePicker(QTabWidget):
     def setFiles(self, files):
         fkey=files.keys()
         if 'Na' in fkey: self.editNa.setFile(files['Na'])
+        if 'Co' in fkey: self.editCo.setFile(files['Co'])
         if 'Cs' in fkey: self.editCs.setFile(files['Cs'])
         if 'AmBe' in fkey: self.editAmBe.setFile(files['AmBe'])
         if 'TAC' in fkey: self.editTAC.setFile(files['TAC'])
         if 'NE213' in fkey: self.editNE213.setFile(files['NE213'])
         if 'FC' in fkey: self.editFC.setFile(files['FC'])
 
+    def setDataTab(self):
+        adata=analysisdata.AnalysisData()
+
+        self.editTACdt.setText("%4.1f"%(adata.TAC_interval,))
+        self.editTdist.setText("%5.3f"%(adata.target_distance,))
+        self.editCgain.setText("%3.1f"%(adata.calibration_gain,))
+        self.editcutL.setText("%3.1f"%(adata.L_threshold,))
+        self.editTgamma.setText("%7.3f"%(adata.Tgamma,))
+
+        
     @pyqtSlot('QString','QString')
     def setCalibData(self, ident, data):
         """

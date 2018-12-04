@@ -947,6 +947,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         C.read(filename)
         files=C.items("Files")
         self.filepick.setFiles(dict(files))
+        try:
+            data=C.items("Data")
+            AnalysisData().setData(dict(data))
+            self.filepick.setDataTab()
+        except:
+            pass # configparser.NoSectionError
         logger.info("Open file "+filename)
 
     def saveFile(self,p):
@@ -970,6 +976,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         fd=filedict['Files']
         for key in fd:
             fd[key]=str(fd[key])
+        data=AnalysisData().getData()
+        filedict['Data']=data
+        print(data)
+        print(self.calibration.checkvars())
+        filedict['Calibration']=self.calibration.checkvars()
         C.read_dict(filedict)
         # future: ask on existing file - but not needed on OSX !
         f=open(filename,"w")
@@ -1074,6 +1085,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             fdata=float(data)
         except:
             logger.error(tag+"is not a float")
+        print(tag, data)
             
         d=AnalysisData()
         if tag == 'Tgamma':

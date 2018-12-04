@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QLabe
 from PyQt5.QtWidgets import QLineEdit
 
 import logging
-import analysisdata
+import gui.analysisdata as analysisdata
 
 """
 Gather the file names needed for analysis

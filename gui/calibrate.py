@@ -4,7 +4,7 @@ if platform.system()=="Darwin":
     import matplotlib
     matplotlib.use("Qt5Agg")
 
-from eventlist import *
+from gui.eventlist import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ from matplotlib.widgets import MultiCursor
 from scipy.stats import linregress
 import logging
 
-from analysisdata import Calibration, AnalysisData
+from .analysisdata import Calibration, AnalysisData
 
 """
 Calibrate neutron detector using gamma ray sources.

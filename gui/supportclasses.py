@@ -10,7 +10,7 @@ Support classes for building a GUI for neutron data analysis.
 
 import sys
 from PyQt5 import Qt
-import icons
+import gui.icons as icons
 
 
 

@@ -25,8 +25,10 @@ SpectrumPlot -- handle start of sort/interaction with update timer
 import sys
 #sys.path.append("..") # for eventlist.py
 import os
-from eventlist import Histogram, Sorter, EventSource
-from eventlist import EventFlags, Gate2d, gatelist
+from . import __path__ as packagepath
+
+from .eventlist import Histogram, Sorter, EventSource
+from .eventlist import EventFlags, Gate2d, gatelist
 
 #simplify event flags
 TIMER   =EventFlags.TIMER
@@ -64,10 +66,10 @@ logger=logging.getLogger("neutrons")
 logger.propagate=False  # don't log message via root logger to console
 logger.setLevel(logging.INFO)
 
-from supportclasses import PlotTreeModel, PlotTreeView
-from analysisdata import Calibration, AnalysisData
+from .supportclasses import PlotTreeModel, PlotTreeView
+from .analysisdata import Calibration, AnalysisData
 
-import icons    # part of this package -- toolbar icons
+import gui.icons as icons   # part of this package -- toolbar icons
 import time
 
 plt.ion()       # turn on interactive mode of matplotlib
@@ -170,11 +172,11 @@ class SpectrumPlotter(Qt.QObject):
         self._active=None
         tb=fig.canvas.manager.toolbar
         tb.addSeparator()
-        a=tb.addAction(Qt.QIcon("images/select_roi.png"), "roi", self._select_roi)
+        a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/select_roi.png"), "roi", self._select_roi)
         a.setCheckable(True)
         self._actions["roi"]=a
         a.setToolTip("Select region of interest")
-        a=tb.addAction(Qt.QIcon("images/save_histo.png"), "saveh", self._save_histo)
+        a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/save_histo.png"), "saveh", self._save_histo)
         #a.setCheckable(True)
         self._actions["saveh"]=a
         a.setToolTip("Save histo data to file")
@@ -689,7 +691,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                 
         self.filewidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
-        from fileentry import FilePicker
+        from .fileentry import FilePicker
         self.filepick=FilePicker()
         label=self.makeLabel("Analysis Files")
         vlayout.addWidget(label)
@@ -751,7 +753,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
         self.btnSaveData = Qt.QToolButton(toolBar)
         self.btnSaveData.setText("data")
-        self.btnSaveData.setIcon(Qt.QIcon("images/drive.png"))
+        self.btnSaveData.setIcon(Qt.QIcon(packagepath[0]+"/images/drive.png"))
         self.btnSaveData.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         self.btnSaveData.setToolTip("Save all histogram data to hdf file")
         toolBar.addWidget(self.btnSaveData)
@@ -881,7 +883,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         self.bthread.quit()
         logger.info("End background task: "+self.sorttype)
         if self.sorttype=="Calibrate":
-            import calibrate as calibrator
+            import gui.calibrate as calibrator
             tree=self.plotmodel
             branch=tree.appendGroup( "Calibration" )
             #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
@@ -914,7 +916,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         elif sorttype=="Sort FC":
             self.startSorting(SetupFCSort)
         elif sorttype=="Calibrate":
-            import calibrate as calibrator
+            import gui.calibrate as calibrator
             self.calibrator=calibrator.Calibrator(self.filepick.files['Na'],
                                                   self.filepick.files['Cs'],
                                                   self.filepick.files['AmBe'],

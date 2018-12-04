@@ -23,7 +23,7 @@ SpectrumPlot -- handle start of sort/interaction with update timer
 """
 
 import sys
-sys.path.append("..") # for eventlist.py
+#sys.path.append("..") # for eventlist.py
 import os
 from eventlist import Histogram, Sorter, EventSource
 from eventlist import EventFlags, Gate2d, gatelist

@@ -170,11 +170,11 @@ class SpectrumPlotter(Qt.QObject):
         self._active=None
         tb=fig.canvas.manager.toolbar
         tb.addSeparator()
-        a=tb.addAction(Qt.QIcon("select_roi.png"), "roi", self._select_roi)
+        a=tb.addAction(Qt.QIcon("images/select_roi.png"), "roi", self._select_roi)
         a.setCheckable(True)
         self._actions["roi"]=a
         a.setToolTip("Select region of interest")
-        a=tb.addAction(Qt.QIcon("save_histo.png"), "saveh", self._save_histo)
+        a=tb.addAction(Qt.QIcon("images/save_histo.png"), "saveh", self._save_histo)
         #a.setCheckable(True)
         self._actions["saveh"]=a
         a.setToolTip("Save histo data to file")
@@ -751,7 +751,7 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         
         self.btnSaveData = Qt.QToolButton(toolBar)
         self.btnSaveData.setText("data")
-        self.btnSaveData.setIcon(Qt.QIcon("drive.png"))
+        self.btnSaveData.setIcon(Qt.QIcon("images/drive.png"))
         self.btnSaveData.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         self.btnSaveData.setToolTip("Save all histogram data to hdf file")
         toolBar.addWidget(self.btnSaveData)

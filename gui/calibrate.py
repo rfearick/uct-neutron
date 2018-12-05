@@ -45,6 +45,31 @@ cid_multi=None
 fcur=None
 multi=None
 
+def find_imin(ar):
+    """
+    index of minimum value of array
+    """
+    l=len(ar)
+    if l>=2:
+        im=0
+        if ar[1]<ar[0]: im=1
+        for i in range(2,l):
+            if ar[i]<ar[im]: im=i
+    return im
+            
+def find_imax(ar):
+    """
+    index of maximum value of array
+    """
+    l=len(ar)
+    if l>=2:
+        im=0
+        if ar[1]>ar[0]: im=1
+        for i in range(2,l):
+            if ar[i]>ar[im]: im=i
+    return im
+            
+
 class Calibrator(object):
     """
     Handle calibration of neutron detection system
@@ -223,10 +248,15 @@ class CalibrationPlotter(object):
         """
         ax1,ax2=axgroup
         data,yl,xl=hist.get_plotlabels()
+        diffdata=np.zeros(len(data))
+        diffdata[1:-1]=(data[2:]-data[0:-2])/2
         slope,intercept=calib
         iscalib=slope!=None and intercept!=None
         isylimit=ylimits[0]!=None and ylimits[1]!=None
         e=np.arange(hist.size1)
+        lo,hi,dlo,dhi=self.limit_calib_spectrum(data, diffdata)
+        print(lo,hi,dlo,dhi)
+        xlimits=(lo,hi+10)
         label="channel"
         if iscalib:
             e=(e-intercept)/slope
@@ -237,14 +267,30 @@ class CalibrationPlotter(object):
         ax1.set_xlabel(label)
         ax1.set_xlim(*xlimits)
         if isylimit: ax1.set_ylim(*ylimits)
-        diffdata=np.zeros(len(data))
-        diffdata[1:-1]=(data[2:]-data[0:-2])/2
         ax2.plot(e,diffdata,drawstyle='steps-mid')
         ax2.set_ylabel(yl)
         ax2.set_xlabel(label)
         ax2.set_xlim(*xlimits)
         # kludge ...
         if isylimit: ax2.set_ylim(-ylimits[1]/4,ylimits[1]/4)
+
+    def limit_calib_spectrum(self, data, diffdata ):
+        """
+        Set axis limits to surround region of interest 
+        """
+        l=len(data)
+        cut=max(data[l//2:l-1])*2 # wild guess
+        for i in range(l):
+            if data[i]>cut: break
+        lo=i
+        for i in range(l-2,0,-1):  # skip last channel as may hold overload.
+            if data[i]>cut:
+                break
+        hi=i
+        dlo=find_imin(diffdata)
+        dhi=find_imax(diffdata)
+        return (lo,hi,dlo,dhi)
+        
 
     def plot_gamma_spectra( self ):
         """
@@ -261,7 +307,8 @@ class CalibrationPlotter(object):
             calibrated=True
         else:
             calibration=(None,None)
-        self.f1=plt.figure("Gamma calibration",(8,8), constrained_layout=True)
+        #self.f1=plt.figure("Gamma calibration",(8,8), constrained_layout=True)
+        self.f1=plt.figure("Gamma calibration",(8,8))
         self.f1.canvas.draw_idle()
         ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
         ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
@@ -285,7 +332,7 @@ class CalibrationPlotter(object):
             self.ax4.plot(xt,intercept+xt*slope)       
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
-        #plt.tight_layout()
+        plt.tight_layout()
 
         self.cid_click=self.f1.canvas.mpl_connect('button_press_event',
                                                   self.pos_callback)
@@ -298,7 +345,8 @@ class CalibrationPlotter(object):
         """
         d=AnalysisData()
         taccalstep=d.TAC_interval #ns
-        f2=plt.figure("TAC calibration", constrained_layout=True)
+        #f2=plt.figure("TAC calibration", constrained_layout=True)
+        f2=plt.figure("TAC calibration")
         f2.canvas.draw_idle()
         data,yl,xl=self.calibrator.hTAC.get_plotlabels()
         tacslope,tacintercept,peakpos=self.calibrator.calibrateTAC(data)
@@ -314,7 +362,7 @@ class CalibrationPlotter(object):
                  (np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
         plt.xlabel("Time [ns]")
         plt.ylabel("Channel")
-        #plt.tight_layout()
+        plt.tight_layout()
 
     def plot_gamma_calibration(self, slope, intercept):
         """
@@ -324,7 +372,7 @@ class CalibrationPlotter(object):
         slope=slope/divisor
         intercept=intercept/divisor
         xt=np.linspace(0.0,5.0,100.0)
-        print("replot")
+        #print("replot")
         self.ax4.cla()
         self.ax4.plot(edges,chans,'bo')
         self.ax4.plot(xt,intercept+xt*slope)
@@ -372,7 +420,10 @@ class CalibrationPlotter(object):
         this also has to handle adjustment of calibration when calibrated.
         gets tricky for AmBe.
         """
-        #tb=self.f1.canvas.manager.toolbar
+        tb=self.f1.canvas.manager.toolbar
+        #print(tb._active)
+        if tb._active is not None and ('PAN' in tb._active or 'ZOOM' in tb._active):
+            return
         #tm=self.f1.canvas.manager.toolmanager
         #print('tbmode',tb)
         #print('tmmode',tm.active_toggle)

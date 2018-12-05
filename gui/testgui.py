@@ -945,12 +945,20 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         C=configparser.ConfigParser(strict=False,inline_comment_prefixes=(';',))
         C.optionxform=lambda option: option
         C.read(filename)
-        files=C.items("Files")
-        self.filepick.setFiles(dict(files))
         try:
-            data=C.items("Data")
+            files=C.items('Files')
+            self.filepick.setFiles(dict(files))
+        except:
+            pass
+        try:
+            data=C.items('Data')
             AnalysisData().setData(dict(data))
             self.filepick.setDataTab()
+        except:
+            pass # configparser.NoSectionError
+        try:
+            data=C.items('Calibration')
+            self.calibration.setData(dict(data))
         except:
             pass # configparser.NoSectionError
         logger.info("Open file "+filename)
@@ -977,10 +985,11 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         for key in fd:
             fd[key]=str(fd[key])
         data=AnalysisData().getData()
-        filedict['Data']=data
-        print(data)
-        print(self.calibration.checkvars())
-        filedict['Calibration']=self.calibration.checkvars()
+        if len(data) != 0:
+            filedict['Data']=data
+        data=self.calibration.getData()
+        if len(data) != 0:
+            filedict['Calibration']=data
         C.read_dict(filedict)
         # future: ask on existing file - but not needed on OSX !
         f=open(filename,"w")

@@ -52,22 +52,44 @@ class Calibration(object, metaclass=Singleton):
         vars=self.checkvars()
         return vars.keys()
 
+    def getData(self):
+        """
+        Package data into dict and return it to caller.
+        Values are floats
+        """
+        data={}
+        for d in __class__.__slots__:
+            v=getattr(self, d, None)
+            if v is not None:
+                data[d]=v
+        return data
+
+    def setData(self, data):
+        """
+        Unpack data from dict and store.
+        The dict is assumed to be read from disk and data values are str.
+        """
+        for d in data.keys():
+            if d in ['EADC', 'TADC']:
+                setattr(self, d, data[d])
+            else:
+                setattr(self, d, float(data[d]))
+            
     def channel(self, E):
         """
-        calculate histogram channel for a given gamma energy (in MeV)
-        this is not efficient because of all the checking and lookup
+        Calculate histogram channel for a given gamma energy (in MeV)
+        (this is not efficient because of all the checking and lookup)
         """
         k=self.keys()
         if 'slope' in k and 'intercept' in k:
-            print( self.slope, E)
             return self.intercept+self.slope*E
         else:
             return 0.0
         
     def energy(self, ch):
         """
-        calculate energy in MeVee for a given gamma histogram channel
-        this is not efficient because of all the checking and lookup
+        Calculate energy in MeVee for a given gamma histogram channel
+        (this is not efficient because of all the checking and lookup)
         """
         k=self.keys()
         if 'slope' in k and 'intercept' in k:
@@ -106,6 +128,10 @@ class AnalysisData(object, metaclass=Singleton):
         self.T0=0.0
 
     def getData(self):
+        """
+        Package data into dict and return it to caller.
+        Values are floats
+        """
         data={}
         for d in AnalysisData.__slots__:
             v=getattr(self, d, None)
@@ -114,5 +140,9 @@ class AnalysisData(object, metaclass=Singleton):
         return data
 
     def setData(self, data):
+        """
+        Unpack data from dict and store.
+        The dict is assumed to be read from disk and data values are str.
+        """
         for d in data.keys():
             setattr(self, d, float(data[d]))

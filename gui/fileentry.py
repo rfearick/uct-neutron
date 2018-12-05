@@ -183,7 +183,26 @@ class FilePicker(QTabWidget):
         self._makeNE213Tab()
         self._makeFCTab()
 
+    def _makeTabItem(layout, TabField, label, tag, connection):
+        layout.addWidget( QLabel(label) )
+        field=TabField(tag)
+        setattr(self, "edit_"+tag, field)
+        layout.addWidget( field )
+        field.setText("%4.1f"%(adata.TAC_interval,))
+        layout.addStretch(1)
+        self.editTACdt.valueChanged.connect(self.setCalibData)
+       
+
     def _makeDataTab(self):
+        # label, tag=attribute name, format,connection
+        datatabitems=(
+            ("TAC interval [ns]","TAC_interval","%4.1f",self.setCalibData),
+            ("Target distance [m]","target_distance","%5.3f",self.setCalibData),
+            ("Calibration gain boost","calibration_gain","%3.1f",self.setCalibData),
+            ("L threshold [MeVee]","L_threshold","%3.1f",self.setCalibData),
+            ("Tgamma from TOF[ns]","Tgamma","%6.3f",self.setCalibData)
+        )
+        
         layout=QVBoxLayout()
         adata=analysisdata.AnalysisData()
 

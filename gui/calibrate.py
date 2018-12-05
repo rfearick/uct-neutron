@@ -285,7 +285,7 @@ class CalibrationPlotter(object):
             self.ax4.plot(xt,intercept+xt*slope)       
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
-        plt.tight_layout()
+        #plt.tight_layout()
 
         self.cid_click=self.f1.canvas.mpl_connect('button_press_event',
                                                   self.pos_callback)
@@ -314,7 +314,7 @@ class CalibrationPlotter(object):
                  (np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
         plt.xlabel("Time [ns]")
         plt.ylabel("Channel")
-        plt.tight_layout()
+        #plt.tight_layout()
 
     def plot_gamma_calibration(self, slope, intercept):
         """

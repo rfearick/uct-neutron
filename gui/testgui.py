@@ -256,8 +256,8 @@ class SpectrumPlotter(Qt.QObject):
             # update TOF gamma
             print("update Tgamma")
             if 'TAC' in self.parent.calibration.keys():
-                print("update")
-                self.parent.filepick.editTgamma.setText("%7.3f"%(mean,))
+                #print("update")
+                self.parent.filepick.editTgamma.setText("%.2f"%(mean,))
                 self.parent.setAnalysisData("Tgamma", mean)
                 
 
@@ -1090,25 +1090,28 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 
     @pyqtSlot('QString','QString')
     def setAnalysisData(self, tag, data):
+        """
+        tag is same as attribute name
+        """
         try:
             fdata=float(data)
         except:
             logger.error(tag+"is not a float")
-        print(tag, data)
+        #print(tag, data)
             
         d=AnalysisData()
         if tag == 'Tgamma':
-            print("d",d.Tgamma)
+            #print("d",d.Tgamma)
             d.Tgamma=fdata
             if 'TAC' in self.calibration.keys():
                 Tcon=d.target_distance/d.speed_of_light  # in ns
                 T0=fdata+Tcon
-                logger.info("Tgamma set to %5.1f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
+                logger.info("Tgamma set to %6.2f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
                 d.T0=T0
             else:
-                logger.info("Tgamma set to %5.1f"%(fdata,))
+                logger.info("Tgamma set to %6.2f"%(fdata,))
                 
-        elif tag == 'Tdist':
+        elif tag == 'target_distance':
             d.target_distance=fdata
             if 'TAC' in self.calibration.keys():
                 Tcon=d.target_distance/d.speed_of_light  # in ns
@@ -1117,13 +1120,13 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
                 logger.info("Tdist set to %5.3f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
             else:
                 logger.info("Tdist set to %5.3f"%(fdata,))
-        elif tag == 'Cgain':
+        elif tag == 'calibration_gain':
             d.calibration_gain=fdata
             logger.info("Extra calibration gain set to %4.1f"%(fdata,))
-        elif tag == 'TAC dt':
+        elif tag == 'TAC_interval':
             d.TAC_interval=fdata
             logger.info("TAC interval set to %4.1f"%(fdata,))
-        elif tag == "cutL":
+        elif tag == "L_threshold":
             d.L_threshold=data
             logger.info("L threshold set to %4.1f"%(fdata,))
         else:

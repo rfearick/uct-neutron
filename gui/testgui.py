@@ -889,7 +889,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
             self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
             for h in self.calibplot.histo:
-                tree.appendAt(branch, h.label, self.calibplot)
+                if h is not None:
+                    tree.appendAt(branch, h.label, self.calibplot)
             self.calibplot.openPlot()
         self.sorttype=None
 
@@ -917,10 +918,12 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             self.startSorting(SetupFCSort)
         elif sorttype=="Calibrate":
             import gui.calibrate as calibrator
-            self.calibrator=calibrator.Calibrator(self.filepick.files['Na'],
-                                                  self.filepick.files['Cs'],
-                                                  self.filepick.files['AmBe'],
-                                                  self.filepick.files['TAC'])
+            # use 'get' below so default None is returned by no-shows.
+            self.calibrator=calibrator.Calibrator(self.filepick.files.get('Na'),
+                                                  self.filepick.files.get('Co'),
+                                                  self.filepick.files.get('Cs'),
+                                                  self.filepick.files.get('AmBe'),
+                                                  self.filepick.files.get('TAC'))
             def _SetupCalibSort(self):
                 return self.calibrator
             self.startSorting(_SetupCalibSort)

@@ -20,8 +20,9 @@ Calibrate neutron detector using gamma ray sources.
 Calibration mainly uses Compton edges, and first escape peak (12C) of AmBe source.
 
 Energies: 
-   22Na      1.062 MeV
+   22Na      1.062 MeV, 0.340
   137Cs      0.477 MeV
+   60Co      1.118 MeV, 0.963 MeV
    12C       3.42, 4.20 MeV  (AmBe source)
 
 Differentiating the spectrum and choosing the lowest point in the region of the 
@@ -82,13 +83,20 @@ class Calibrator(object):
             file paths to respective list files
     The calibration data is kept in a dict
     """
-    def __init__( self, infileNa, infileCs, infileAmBe, infileTAC):
+    def __init__( self, infileNa, infileCo, infileCs, infileAmBe, infileTAC):
+        self.activegamma=[]
         self.infileNa = infileNa
+        if infileNa is not None: self.activegamma.append('Na')
+        self.infileCo = infileCo
+        if infileCo is not None: self.activegamma.append('Co')
         self.infileCs = infileCs
+        if infileCs is not None: self.activegamma.append('Cs')
         self.infileAmBe = infileAmBe
+        if infileAmBe is not None: self.activegamma.append('AmBe')
         self.infileTAC = infileTAC
         self.hNa = None
         self.hCs = None
+        self.hCo = None
         self.hAmBe = None
         self.hTAC = None
         self.calibration=Calibration()
@@ -101,22 +109,33 @@ class Calibrator(object):
         Define event sources and histograms, then sort data
         """
         # define event sources
-        ENa=EventSource(self.infileNa)
-        ECs=EventSource(self.infileCs)
-        EAmBe=EventSource(self.infileAmBe)
+        if self.infileNa is not None:
+            ENa=EventSource(self.infileNa)
+            hNa=Histogram(ENa, ADC1+ADC2+ADC3, 'ADC1', 512, label="22Na")
+            self.hNa = hNa
+        if self.infileCo is not None:
+            ECo=EventSource(self.infileCo)
+            hCo=Histogram(ECo, ADC1+ADC2+ADC3, 'ADC1', 512, label="60Co")
+            self.hCo = hCo
+        if self.infileCs is not None:
+            ECs=EventSource(self.infileCs)
+            hCs=Histogram(ECs, ADC1+ADC2+ADC3, 'ADC1', 512, label="137Cs")
+            self.hCs = hCs
+        if self.infileAmBe is not None:
+            EAmBe=EventSource(self.infileAmBe)
+            hAmBe=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC1', 512, label='AmBe')
+            self.hAmBe = hAmBe
         ETAC=EventSource(self.infileTAC)
 
         # get event generators
-        GNa=ENa.eventstream()
-        GCs=ECs.eventstream()
-        GAmBe=EAmBe.eventstream()
-        GTAC=ETAC.eventstream()
+        #GNa=ENa.eventstream()
+        #GCo=ECo.eventstream()
+        #GCs=ECs.eventstream()
+        #GAmBe=EAmBe.eventstream()
+        #GTAC=ETAC.eventstream()
 
         # define histograms
-        hNa=Histogram(ENa, ADC1+ADC2+ADC3, 'ADC1', 512, label="22Na")
-        hCs=Histogram(ECs, ADC1+ADC2+ADC3, 'ADC1', 512, label="137Cs")
-        hAmBe=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC1', 512, label='AmBe')
-        hTAC=Histogram(EAmBe, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
+        hTAC=Histogram(ETAC, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
 
         # set calibration channels
         self.calibration.EADC='ADC1'
@@ -124,22 +143,26 @@ class Calibrator(object):
         #if 'T0' not in self.calibration.keys(): self.calibration['T0']=0.0
 
         # sort data. eventually must make multistream sorter!
-        SNa=Sorter(ENa, [hNa] )
-        sortadc=SNa.sort()
+        if self.infileNa is not None:
+            SNa=Sorter(ENa, [hNa] )
+            sortadc=SNa.sort()
 
-        SCs=Sorter(ECs, [hCs] )
-        sortadc=SCs.sort()
+        if self.infileCo is not None:
+            SCo=Sorter(ECo, [hCo] )
+            sortadc=SCo.sort()
 
-        SAmBe=Sorter(EAmBe, [hAmBe] )
-        sortadc=SAmBe.sort()
+        if self.infileCs is not None:
+            SCs=Sorter(ECs, [hCs] )
+            sortadc=SCs.sort()
+
+        if self.infileAmBe is not None:
+            SAmBe=Sorter(EAmBe, [hAmBe] )
+            sortadc=SAmBe.sort()
 
         STAC=Sorter(ETAC, [hTAC] )
         sortadc=STAC.sort()
 
         # keep reference to histograms
-        self.hNa = hNa
-        self.hCs = hCs
-        self.hAmBe = hAmBe
         self.hTAC = hTAC
 
     def calibrateTAC(self,data):
@@ -232,10 +255,12 @@ class CalibrationPlotter(object):
         self.calibrator=calibrator
         # copy these for convenience
         self.hNa = calibrator.hNa
+        self.hCo = calibrator.hCo
         self.hCs = calibrator.hCs
         self.hAmBe = calibrator.hAmBe
         self.hTAC = calibrator.hTAC
-        self.histo=[self.hNa,self.hCs,self.hAmBe,self.hTAC]
+        self.histo=[self.hNa,self.hCo, self.hCs,self.hAmBe,self.hTAC]
+        self.figures={}
   
     # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.
@@ -292,7 +317,7 @@ class CalibrationPlotter(object):
         return (lo,hi,dlo,dhi)
         
 
-    def plot_gamma_spectra( self ):
+    def plot_gamma_spectra( self, tag=None ):
         """
         Plot the three gamma spectra
         """
@@ -308,35 +333,81 @@ class CalibrationPlotter(object):
         else:
             calibration=(None,None)
         #self.f1=plt.figure("Gamma calibration",(8,8), constrained_layout=True)
-        self.f1=plt.figure("Gamma calibration",(8,8))
-        self.f1.canvas.draw_idle()
-        ax11=plt.subplot2grid( (4,4), (0,0),colspan=2)
-        ax12=plt.subplot2grid( (4,4), (1,0),colspan=2)
-        self.axesgroup1=(ax11,ax12)
-        self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
+        #self.f1=plt.figure("Gamma calibration",(8,8))
+        if 'Na' in self.calibrator.activegamma:
+            self.f1=plt.figure("Gamma calibration1",(4,4))
+            self.f1.canvas.draw_idle()
+            ax11=plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=2)
+            ax12=plt.subplot2grid( (4,4), (2,0),colspan=4,rowspan=2)
+            self.axesgroup1=(ax11,ax12)
+            self.plot_calib_spectrum( self.axesgroup1, self.hNa, calibration, (0,120), (None,None))
+            self.figures['Gamma calibration1']={}
+            self.figures['Gamma calibration1']['figure']=self.f1
+            self.figures['Gamma calibration1']['axes']=self.axesgroup1
+            self.cid_click=self.f1.canvas.mpl_connect('button_press_event',
+                                                  self.pos_callback)
+            self.cid_enter=self.f1.canvas.mpl_connect('axes_enter_event',
+                                                  self.fig_callback)
 
-        ax21=plt.subplot2grid( (4,4), (0,2),colspan=2)
-        ax22=plt.subplot2grid( (4,4), (1,2),colspan=2)
-        self.axesgroup2=(ax21,ax22)
-        self.plot_calib_spectrum( self.axesgroup2, self.hCs, calibration, (0,50), (None,None))
+        if 'Co' in self.calibrator.activegamma:
+            self.f2=plt.figure("Gamma calibration2",(4,4))
+            self.f2.canvas.draw_idle()
+            ax21=plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=2)
+            ax22=plt.subplot2grid( (4,4), (2,0),colspan=4,rowspan=2)
+            self.axesgroup2=(ax21,ax22)
+            self.plot_calib_spectrum( self.axesgroup2, self.hCo, calibration, (0,50), (None,None))
+            self.figures['Gamma calibration2']={}
+            self.figures['Gamma calibration2']['figure']=self.f2
+            self.figures['Gamma calibration2']['axes']=self.axesgroup2
+            self.cid_click2=self.f2.canvas.mpl_connect('button_press_event',
+                                                  self.pos_callback)
+            self.cid_enter2=self.f2.canvas.mpl_connect('axes_enter_event',
+                                                  self.fig_callback)
 
-        ax31=plt.subplot2grid( (4,4), (2,0),colspan=2)
-        ax32=plt.subplot2grid( (4,4), (3,0),colspan=2)
-        self.axesgroup3=(ax31,ax32)
-        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe, calibration, (50,150), (0,2000))
+        if 'Cs' in self.calibrator.activegamma:
+            self.f3=plt.figure("Gamma calibration3",(4,4))
+            self.f3.canvas.draw_idle()
+            ax31=plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=2)
+            ax32=plt.subplot2grid( (4,4), (2,0),colspan=4,rowspan=2)
+            self.axesgroup3=(ax31,ax32)
+            self.plot_calib_spectrum( self.axesgroup3, self.hCs, calibration, (50,150), (0,2000))
+            self.figures['Gamma calibration3']={}
+            self.figures['Gamma calibration3']['figure']=self.f3
+            self.figures['Gamma calibration3']['axes']=self.axesgroup3
+            self.cid_click3=self.f3.canvas.mpl_connect('button_press_event',
+                                                  self.pos_callback)
+            self.cid_enter3=self.f3.canvas.mpl_connect('axes_enter_event',
+                                                  self.fig_callback)
+        
+        if 'AmBe' in self.calibrator.activegamma:
+            self.f4=plt.figure("Gamma calibration4",(4,4))
+            self.f4.canvas.draw_idle()
+            ax41=plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=2)
+            ax42=plt.subplot2grid( (4,4), (2,0),colspan=4,rowspan=2)
+            self.axesgroup4=(ax41,ax42)
+            self.plot_calib_spectrum( self.axesgroup4, self.hAmBe, calibration, (50,150), (0,2000))
+            self.figures['Gamma calibration4']={}
+            self.figures['Gamma calibration4']['figure']=self.f4
+            self.figures['Gamma calibration4']['axes']=self.axesgroup4
+            self.cid_click4=self.f4.canvas.mpl_connect('button_press_event',
+                                                  self.pos_callback)
+            self.cid_enter4=self.f4.canvas.mpl_connect('axes_enter_event',
+                                                  self.fig_callback)
 
-        self.ax4 =plt.subplot2grid( (4,4), (2,2),colspan=2,rowspan=2)
+        self.f5=plt.figure("Gamma calibration5",(4,4))
+        self.f5.canvas.draw_idle()
+        self.ax5 =plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=4)
         if calibrated:
             xt=np.linspace(0.0,5.0,100.0)
-            self.ax4.plot(edges,chans,'bo')
-            self.ax4.plot(xt,intercept+xt*slope)       
+            self.ax5.plot(edges,chans,'bo')
+            self.ax5.plot(xt,intercept+xt*slope)       
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
         plt.tight_layout()
 
-        self.cid_click=self.f1.canvas.mpl_connect('button_press_event',
+        self.cid_click3=self.f3.canvas.mpl_connect('button_press_event',
                                                   self.pos_callback)
-        self.cid_enter=self.f1.canvas.mpl_connect('axes_enter_event',
+        self.cid_enter3=self.f3.canvas.mpl_connect('axes_enter_event',
                                                   self.fig_callback)
 
     def plot_TAC_spectra(self):
@@ -373,23 +444,31 @@ class CalibrationPlotter(object):
         intercept=intercept/divisor
         xt=np.linspace(0.0,5.0,100.0)
         #print("replot")
-        self.ax4.cla()
-        self.ax4.plot(edges,chans,'bo')
-        self.ax4.plot(xt,intercept+xt*slope)
-        self.ax4.set_xlabel("Energy (MeVee)")
-        self.ax4.set_ylabel("Channel")
-        self.axesgroup1[0].cla()
-        self.axesgroup1[1].cla()
+        self.ax5.cla()
+        self.ax5.plot(edges,chans,'bo')
+        self.ax5.plot(xt,intercept+xt*slope)
+        self.ax5.set_xlabel("Energy (MeVee)")
+        self.ax5.set_ylabel("Channel")
         calibration=(slope,intercept)
-        self.plot_calib_spectrum( self.axesgroup1, self.hNa,
+        if 'Na' in self.calibrator.activegamma:
+            self.axesgroup1[0].cla()
+            self.axesgroup1[1].cla()
+            self.plot_calib_spectrum( self.axesgroup1, self.hNa,
                                   calibration, (0,120), (None,None))
-        self.axesgroup2[0].cla()
-        self.axesgroup2[1].cla()
-        self.plot_calib_spectrum( self.axesgroup2, self.hCs,
+        if 'Co' in self.calibrator.activegamma:
+            self.axesgroup2[0].cla()
+            self.axesgroup2[1].cla()
+            self.plot_calib_spectrum( self.axesgroup2, self.hCo,
                                   calibration, (0,50), (None,None))
-        self.axesgroup3[0].cla()
-        self.axesgroup3[1].cla()
-        self.plot_calib_spectrum( self.axesgroup3, self.hAmBe,
+        if 'Cs' in self.calibrator.activegamma:
+            self.axesgroup3[0].cla()
+            self.axesgroup3[1].cla()
+            self.plot_calib_spectrum( self.axesgroup3, self.hCs,
+                                  calibration, (50,150), (0,2000))
+        if 'AmBe' in self.calibrator.activegamma:
+            self.axesgroup4[0].cla()
+            self.axesgroup4[1].cla()
+            self.plot_calib_spectrum( self.axesgroup4, self.hAmBe,
                                   calibration, (50,150), (0,2000))
         
     def plot_all_spectra(self):
@@ -441,14 +520,18 @@ class CalibrationPlotter(object):
             gain=d.calibration_gain
             xdata=xdata*gain/divisor
          
-        if ax in self.axesgroup1:
+        ag=self.calibrator.activegamma
+        if 'Na' in ag and ax in self.axesgroup1:
             currentaxes=self.axesgroup1
             chans[0]=xdata
-        elif ax in self.axesgroup2:
+        elif 'Co' in ag and ax in self.axesgroup2:
             currentaxes=self.axesgroup2
             chans[1]=xdata
-        elif ax in self.axesgroup3:
+        elif 'Cs' in ag and ax in self.axesgroup3:
             currentaxes=self.axesgroup3
+            chans[1]=xdata
+        elif 'AmBe' in ag and ax in self.axesgroup4:
+            currentaxes=self.axesgroup4
             if chans[2]==None:
                 chans[2]=xdata
             elif chans[3]==None:
@@ -480,6 +563,7 @@ class CalibrationPlotter(object):
         """
         global multi
         ax=event.inaxes
+        """
         if ax in self.axesgroup1:
             currentaxes=self.axesgroup1
         elif ax in self.axesgroup2:
@@ -490,4 +574,22 @@ class CalibrationPlotter(object):
             return
         #if multi is not None: multi.delete()
         self.multi=MultiCursor(self.f1.canvas, currentaxes, color='r', lw=1.5,
+                               horizOn=False, vertOn=True, useblit=False)
+        """
+        cal=self.calibrator.activegamma
+        if 'Na' in cal and ax in self.figures['Gamma calibration1']['axes']:
+            currentaxes=self.figures['Gamma calibration1']['axes']
+            currentfigure=self.figures['Gamma calibration1']['figure']
+        elif 'Co' in cal and ax in self.figures['Gamma calibration2']['axes']:
+            currentaxes=self.figures['Gamma calibration2']['axes']
+            currentfigure=self.figures['Gamma calibration2']['figure']
+        elif 'Cs' in cal and ax in self.figures['Gamma calibration3']['axes']:
+            currentaxes=self.figures['Gamma calibration3']['axes']
+            currentfigure=self.figures['Gamma calibration3']['figure']
+        elif 'AmBe' in cal and ax in self.figures['Gamma calibration4']['axes']:
+            currentaxes=self.figures['Gamma calibration4']['axes']
+            currentfigure=self.figures['Gamma calibration4']['figure']
+        else:
+            return
+        self.multi=MultiCursor(currentfigure.canvas, currentaxes, color='r', lw=1.5,
                                horizOn=False, vertOn=True, useblit=False)

@@ -888,7 +888,8 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
             branch=tree.appendGroup( "Calibration" )
             #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
             self.calibplot=calibrator.CalibrationPlotter(self.calibrator)
-            for h in self.calibplot.histo:
+            for k in self.calibplot.histo.keys():
+                h=self.calibplot.histo[k]
                 if h is not None:
                     tree.appendAt(branch, h.label, self.calibplot)
             self.calibplot.openPlot()

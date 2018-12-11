@@ -41,6 +41,9 @@ edges=[1.062,0.477,3.42,4.20]
 slope,intercept=0.0,0.0
 calibration=(None,None)
 
+edges=[]
+chans=[]
+
 cid_multi=None
 fcur=None
 multi=None
@@ -58,6 +61,17 @@ class Calibrator(object):
             file paths to respective list files
     The calibration data is kept in a dict
     """
+    
+    comptonedges={'Na':(0.340,1.062),
+                  'Co':(0.963,1.118),
+                  'Cs':(0.477,),
+                  'AmBe':(3.42, 4.20)
+                   } # in MeV
+    comptonchannels={'Na':[None,None],
+                  'Co':[None,None],
+                  'Cs':[None],
+                  'AmBe':[None,None]
+                   }
     def __init__( self, infileNa, infileCo, infileCs, infileAmBe, infileTAC):
         self.activegamma=[]
         self.infileNa = infileNa
@@ -109,10 +123,10 @@ class Calibrator(object):
             self.hAmBe = hAmBe
             SAmBe=Sorter(EAmBe, [hAmBe] )
             sortlist.append(SAmBe)
+            
         ETAC=EventSource(self.infileTAC)
         hTAC=Histogram(ETAC, ADC1+ADC2+ADC3, 'ADC3', 1024, label='TAC')
         STAC=Sorter(ETAC, [hTAC] )
-        # keep reference to histograms
         self.hTAC = hTAC
         sortlist.append(STAC)
 
@@ -220,6 +234,7 @@ class CalibrationPlotter(object):
         self.hTAC = calibrator.hTAC
         self.histo={'Na':self.hNa,'Co':self.hCo, 'Cs':self.hCs,'AmBe':self.hAmBe,'TAC':self.hTAC}
         self.figures={}
+        #self.selecting=False
   
     # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.
@@ -313,7 +328,6 @@ class CalibrationPlotter(object):
         for source in active:
             if style=='multi':
                 fign=plt.figure(source,page)
-                plt.tight_layout()
             f1=fign
             f1.canvas.draw_idle()
             ax11=plt.subplot2grid( (4,4), top1[0],colspan=csp,rowspan=rsp)
@@ -329,6 +343,7 @@ class CalibrationPlotter(object):
                                                   self.pos_callback)
             self.figures[source]['enter']=f1.canvas.mpl_connect('axes_enter_event',
                                                   self.fig_callback)
+            plt.tight_layout()
             
         
         self.f5=plt.figure("Gamma calibration",(4,4))
@@ -420,6 +435,7 @@ class CalibrationPlotter(object):
         this also has to handle adjustment of calibration when calibrated.
         gets tricky for AmBe.
         """
+        print('Enter pos_callback')
         #tb=self.f1.canvas.manager.toolbar
         tb=event.canvas.manager.toolbar
         #print(tb._active)
@@ -444,16 +460,29 @@ class CalibrationPlotter(object):
          
         ag=self.calibrator.activegamma
         if 'Na' in ag and ax in self.figures['Na']['axes']:
+            currentfig=self.figures['Na']
             currentaxes=self.figures['Na']['axes']
-            chans[0]=xdata
+            #chans[0]=xdata
+            comptonedge=self.calibrator.comptonedges['Na']
+            source='Na'
         elif 'Co' in ag and ax in self.figures['Co']['axes']:
+            currentfig=self.figures['Co']
             currentaxes=self.figures['Co']['axes']
-            chans[1]=xdata
+            #chans[1]=xdata
+            comptonedge=self.calibrator.comptonedges['Co']
+            source='Co'
         elif 'Cs' in ag and ax in self.figures['Cs']['axes']:
+            currentfig=self.figures['Cs']
             currentaxes=self.figures['Cs']['axes']
-            chans[1]=xdata
+            #chans[1]=xdata
+            comptonedge=self.calibrator.comptonedges['Cs']
+            source='Cs'
         elif 'AmBe' in ag and ax in self.figures['AmBe']['axes']:
+            currentfig=self.figures['AmBe']
             currentaxes=self.figures['AmBe']['axes']
+            comptonedge=self.calibrator.comptonedges['AmBe']
+            source='AmBe'
+            """
             if chans[2]==None:
                 chans[2]=xdata
             elif chans[3]==None:
@@ -466,10 +495,18 @@ class CalibrationPlotter(object):
                     chans[2]=xdata
                 else:
                     chans[3]=xdata
+            """
         else:
             return
         currentaxes[0].axvline(event.xdata)
+        x=event.xdata
         currentaxes[1].axvline(event.xdata)
+        if len(comptonedge)==1:
+            self.calibrator.comptonchannels[source][0]=xdata
+        else:    
+            self._annotate_selection(x, currentaxes, comptonedge,currentfig)
+        print('pos_callback',currentfig['click'])
+        """
         if chans[0] is not None and chans[1] is not None and chans[2] is not None and chans[3] is not None:
             if chans[2]>chans[3]:
                 c3=chans[2]
@@ -478,7 +515,102 @@ class CalibrationPlotter(object):
                 chans[3]=c3
             slope,intercept=self.calibrator.calibrateGamma(edges,chans)
             self.plot_gamma_calibration(slope,intercept)
-
+        """
+        cal=self.calibrator.activegamma
+        totlen=0
+        totnone=0
+        #edges=[]
+        #chans=[]
+        for source in cal:
+            v=self.calibrator.comptonchannels[source]
+            e=self.calibrator.comptonedges[source]
+            l=len(v)
+            totlen+=l
+            for i in range(l):
+                if v[i]!=None:
+                    chans.append(v[i])
+                    edges.append(e[i])
+            print(chans,edges)
+        if len(edges)>3:
+            slope,intercept=self.calibrator.calibrateGamma(edges,chans)
+            self.plot_gamma_calibration(slope,intercept)
+           
+            
+        
+    def _annotate_selection(self, x, currentaxes, comptonedge, currentfig):
+        if len(comptonedge)==1: return
+        ylims=currentaxes[0].get_ylim()
+        dely=(ylims[1]-ylims[0])*0.12
+        y=ylims[1]-dely
+        edgestr="%.3f MeV"%(comptonedge[0])
+        ann1=currentaxes[0].annotate(edgestr,
+                                xy=(x,y-dely), xycoords='data',
+                                xytext=(x+10,y), textcoords='data',
+                                bbox=dict(boxstyle="round", fc="w"),
+                                arrowprops=dict(arrowstyle="->",
+                                                connectionstyle="angle,angleA=-90,angleB=180"),
+                                picker=True)
+        #ann1.set_visible(True)
+        edgestr="%.3f MeV"%(comptonedge[1])
+        ann2=currentaxes[0].annotate(edgestr,
+                                xy=(x,y-3.5*dely), xycoords='data',
+                                xytext=(x+10,y-3.5*dely), textcoords='data',
+                                bbox=dict(boxstyle="round", fc="w"),
+                                arrowprops=dict(arrowstyle="->",
+                                                connectionstyle="angle,angleA=-90,angleB=180"),picker=True)
+        currentfig['figure'].canvas.mpl_disconnect(currentfig['click'])
+        self.cidp=currentfig['figure'].canvas.mpl_connect('pick_event',self.pick_callback)
+        print(ann1,ann2)
+        currentfig['pickchoices']=(ann1,ann2)
+        #self.multi.disconnect()
+        #self.multi=None
+        #self.selecting=True
+        
+    def pick_callback(self, event):
+        print('picked')
+        print('event',event.artist)
+        print('event.artist',event.artist.get_text())
+        print('event',event.name)
+        mevent=event.mouseevent
+        print('mevent',mevent.x,mevent.y,mevent.inaxes)
+        #print('x',x)
+        artist=event.artist
+        canvas=event.canvas
+        inaxes=event.mouseevent.inaxes
+        cal=self.calibrator.activegamma
+        for source in cal:
+            axes=self.figures[source]['axes']
+        
+            if inaxes in axes:
+                if artist in self.figures[source]['pickchoices']:
+                    print("In pickchoices")
+                    p1,p2=self.figures[source]['pickchoices']
+                    if artist == p1:
+                        t=p1.get_text().split(' ')
+                        #self.calibrator.comptonchannels[source][0]=float(t[0])
+                        self.calibrator.comptonchannels[source][0]=p1.xy[0]
+                        print('selection',t)
+                    elif artist == p2:
+                        t=p2.get_text().split(' ')
+                        #self.calibrator.comptonchannels[source][1]=float(t[0])
+                        self.calibrator.comptonchannels[source][1]=p1.xy[0]
+                        print('selection',t)
+                      
+                    p1.set_visible(False)
+                    p2.set_visible(False)
+                    self.figures[source]['pickchoices']=(None,None)
+                    
+                currentaxes=axes
+                currentfig=self.figures[source]
+            
+                #currentfig['figure'].canvas.mpl_disconnect(currentfig['pickcid'])
+                currentfig['figure'].canvas.mpl_disconnect(self.cidp)
+                print('click source',self.figures[source]['click'])
+                self.figures[source]['click']=currentfig['figure'].canvas.mpl_connect('button_press_event', self.pos_callback)
+        
+        return True
+        
+        
     def fig_callback(self, event):
         """
         Turn on multicursor when cursor is over gamma calibration axes.
@@ -486,6 +618,8 @@ class CalibrationPlotter(object):
         global multi
         ax=event.inaxes
         cal=self.calibrator.activegamma
+        
+        #if self.selecting: return
         
         for source in cal:
             axes=self.figures[source]['axes']

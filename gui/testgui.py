@@ -331,15 +331,15 @@ class SpectrumPlotter(Qt.QObject):
                 # must compensate for histo size
                 factor=1024//size  # -> divisor
                 if adc==calib.EADC:
-                    m=calib.slope/factor
-                    c=calib.intercept/factor
+                    m=calib.slope/factor  ## *
+                    c=calib.intercept/factor ## *
                     x=np.arange(0.0,float(size),1.0)
-                    x=(1.0/m)*x-c/m
+                    x=(1.0/m)*x-c/m  ## m*x+c
                     xl="Energy [MeVee]"
                 elif adc==calib.TADC:
-                    m=calib.TAC/factor
+                    m=calib.TAC/factor  ## *
                     x=np.arange(0.0,float(size),1.0)
-                    x=x/m
+                    x=x/m  ## m*x
                     xl="T [ns]"              
             except:
                     x=np.arange(0.0,float(size),1.0)
@@ -396,7 +396,7 @@ def SetupSort(parent):
     logger.info(infile)
     # check if spectrum calibrated
     calibration=Calibration()
-    if(len(calibration.checkvars())==5):
+    if(len(calibration.asDict())==5):
         logger.info("Spectrum is calibrated")
 
     cutL=2.5
@@ -495,7 +495,7 @@ class CalculatedEventSort(object):
         target_distance=data.target_distance # m , flight path target to detector
         slope_Tof=calibration.TAC # TAC calibration in channel/ns
         choffset=target_distance*slope_Tof/speed_of_light # channel offset due to flight path
-        chT0=self.analysisdata.Tgamma*slope_Tof + choffset # channel of gamma flash at detector
+        chT0=self.analysisdata.Tgamma*slope_Tof + choffset # channel of gamma flash at detector ## *
         self.chT0=chT0 # keep copy
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff

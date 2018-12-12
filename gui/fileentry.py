@@ -124,27 +124,6 @@ class DataField(QLineEdit):
         #    data=0.0
         self.valueChanged.emit(self.tag,data)
 
-    """
-    def getFile(self):
-        directory=FileField.currentpath if FileField.currentpath is not None else '.'
-        directory=str(directory)
-        filename,_=Qt.QFileDialog.getOpenFileName(self,'Open file',directory,"List files (*.lst)")
-        if filename == '': return
-        pp=Path(filename)
-        if pp.exists():
-            self.filename=filename
-            self.path=pp
-            self.name=pp.name
-            self.stem=pp.stem
-            self.parentpath=pp.parent
-            if FileField.currentpath is None or FileField.currentpath != self.parentpath:
-                FileField.currentpath=pp.parent           
-            self.setText(pp.name)
-            mpapath=pp.with_suffix(".mpa")
-            #print("mpafile   :",mpapath.exists())
-            scalers=self.getScalerData(mpapath)
-            self.valueChanged.emit(self.tag,pp)
-    """
 
 class FilePicker(QTabWidget):
     """
@@ -162,22 +141,11 @@ class FilePicker(QTabWidget):
         self.ne213files = QWidget()
         self.fcfiles    = QWidget()
 
-        """
-        self.editTACdt=None
-        self.editTdist=None
-        self.editCgain=None
-        self.editcutL=None
-        #self.editTgamma=None
-        self.editNa=None
-        self.editCs=None
-        self.editAmBe=None
-        self.editTAC=None
-        """
         self.editNE213=None
         self.editDefTOF=None # define time of flight spectrum
-        self.editTgamma=None     # for gamma flash from target to define Tgamma
+        self.editTgamma=None # for gamma flash from target to define Tgamma
         self.editFC=None
-        self.countfiles=6 # number of files to get
+        #self.countfiles=6    # number of files to get
 
         self.files={}
         
@@ -212,44 +180,6 @@ class FilePicker(QTabWidget):
         adata=analysisdata.AnalysisData()
         for label, tag, fmt, conn in datatabitems:
             self._makeTabItem(layout, DataField, label, tag, fmt, conn)
-
-        """
-        layout.addWidget( QLabel("TAC interval [ns]") )
-        self.editTACdt=DataField("TAC dt")
-        layout.addWidget( self.editTACdt )
-        self.editTACdt.setText("%4.1f"%(adata.TAC_interval,))
-        layout.addStretch(1)
-        self.editTACdt.valueChanged.connect(self.setCalibData)
-        
-        layout.addWidget( QLabel("Target distance [m]") )
-        self.editTdist=DataField("Tdist")
-        layout.addWidget( self.editTdist )
-        self.editTdist.setText("%5.3f"%(adata.target_distance,))
-        layout.addStretch(1)
-        self.editTdist.valueChanged.connect(self.setCalibData)
-        
-        layout.addWidget( QLabel("Calibration gain boost") )
-        self.editCgain=DataField("Cgain")
-        layout.addWidget( self.editCgain )
-        self.editCgain.setText("%3.1f"%(adata.calibration_gain,))
-        layout.addStretch(1)
-        self.editCgain.valueChanged.connect(self.setCalibData)
-        
-        layout.addWidget( QLabel("L threshold [MeVee]") )
-        self.editcutL=DataField("cutL")
-        layout.addWidget( self.editcutL )
-        self.editcutL.setText("%3.1f"%(adata.L_threshold,))
-        layout.addStretch(1)
-        self.editcutL.valueChanged.connect(self.setCalibData)
-        
-        #layout.addWidget( QLabel("Tgamma from TOF[ns]") )
-        #self.editTgamma=DataField("Tgamma")
-        #layout.addWidget( self.editTgamma )
-        #self.editTgamma.setText("0.0")
-        ##layout.addLayout( hlayout )
-        #layout.addStretch(1)
-        #self.editTgamma.valueChanged.connect(self.setCalibData)
-        """
         
         self.calibdata.setLayout(layout)
         self.addTab( self.calibdata, "Analysis Data" )
@@ -268,40 +198,6 @@ class FilePicker(QTabWidget):
         layout=QVBoxLayout()
         for label, tag, fmt, conn in calibtabitems:
             self._makeTabItem(layout, FileField, label, tag, fmt, conn)
-
-        """
-        layout.addWidget( QLabel("22Na:") )
-        self.editNa=FileField("Na")
-        layout.addWidget( self.editNa )
-        layout.addSpacing(5)
-        self.editNa.valueChanged.connect(self.setFilePath)
-        
-        layout.addWidget( QLabel("60Co:") )
-        self.editCo=FileField("Co")
-        layout.addWidget( self.editCo )
-        layout.addSpacing(5)
-        self.editCo.valueChanged.connect(self.setFilePath)
-       
-        layout.addWidget( QLabel("137Cs:") )
-        self.editCs=FileField("Cs")
-        layout.addWidget( self.editCs )
-        layout.addSpacing(5)
-        self.editCs.valueChanged.connect(self.setFilePath)
-       
-        layout.addWidget( QLabel("AmBe:") )
-        self.editAmBe=FileField("AmBe")
-        layout.addWidget( self.editAmBe )
-        layout.addSpacing(5)
-        self.editAmBe.valueChanged.connect(self.setFilePath)
-        
-        layout.addWidget( QLabel("TAC:") )
-        self.editTAC=FileField("TAC")
-        layout.addWidget( self.editTAC )
-        layout.addSpacing(5)
-        self.editTAC.valueChanged.connect(self.setFilePath)
-
-        layout.addStretch(1)
-        """
 
         self.calibfiles.setLayout(layout)
         self.addTab( self.calibfiles, "Calibration" )
@@ -350,8 +246,13 @@ class FilePicker(QTabWidget):
         self.fileChanged.emit(len(self.files)) # notify if file count changed
 
     def setFiles(self, files):
+        """
+        Set filename in fields from a file
+        """
         fkey=files.keys()
-        print(fkey)
+        for f in fkey:
+            getattr(self, f).setFile(files[f])
+        """
         if 'Na' in fkey: self.editNa.setFile(files['Na'])
         if 'Co' in fkey: self.editCo.setFile(files['Co'])
         if 'Cs' in fkey: self.editCs.setFile(files['Cs'])
@@ -359,6 +260,7 @@ class FilePicker(QTabWidget):
         if 'TAC' in fkey: self.editTAC.setFile(files['TAC'])
         if 'NE213' in fkey: self.editNE213.setFile(files['NE213'])
         if 'FC' in fkey: self.editFC.setFile(files['FC'])
+        """
 
     def setDataTab(self):
         adata=analysisdata.AnalysisData()
@@ -375,8 +277,6 @@ class FilePicker(QTabWidget):
         """
         set data from entry field.
         """
-        #print(ident,data)
-        #print(type(data))
         self.dataChanged.emit(str(ident),str(data)) # notify if file count changed
 
         

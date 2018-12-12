@@ -329,20 +329,20 @@ class SpectrumPlotter(Qt.QObject):
             calib=self.calibration
             try:
                 # must compensate for histo size
-                factor=1024//size  # -> divisor
+                factor=1024//size  # don't use divisor because 2-d
                 if adc==calib.EADC:
-                    m=calib.slope/factor  ## *
-                    c=calib.intercept/factor ## *
+                    m=calib.slope*factor  ## /
+                    c=calib.intercept*factor ## /
                     x=np.arange(0.0,float(size),1.0)
-                    x=(1.0/m)*x-c/m  ## m*x+c
+                    x=m*x+c #(1.0/m)*x-c/m
                     xl="Energy [MeVee]"
                 elif adc==calib.TADC:
-                    m=calib.TAC/factor  ## *
+                    m=calib.TAC*factor  ## /
                     x=np.arange(0.0,float(size),1.0)
-                    x=x/m  ## m*x
+                    x=x*m  ## m/x
                     xl="T [ns]"              
             except:
-                    x=np.arange(0.0,float(size),1.0)
+                x=np.arange(0.0,float(size),1.0)
         else:
             m,xl=h.calib
             x=np.arange(0.0,float(size),1.0)*m
@@ -494,8 +494,9 @@ class CalculatedEventSort(object):
         speed_of_light=data.speed_of_light # m/ns
         target_distance=data.target_distance # m , flight path target to detector
         slope_Tof=calibration.TAC # TAC calibration in channel/ns
-        choffset=target_distance*slope_Tof/speed_of_light # channel offset due to flight path
-        chT0=self.analysisdata.Tgamma*slope_Tof + choffset # channel of gamma flash at detector ## *
+        #choffset=(target_distance/speed_of_light)*slope_Tof# channel offset due to flight path
+        choffset=(target_distance/speed_of_light)/slope_Tof # channel offset due to flight path
+        chT0=self.analysisdata.Tgamma/slope_Tof + choffset # channel of gamma flash at detector ## *
         self.chT0=chT0 # keep copy
         self.choffset=choffset
         self.chTgamma2=self.chT0-5 # arbitrary cutoff
@@ -667,9 +668,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
         The following keys are known:
         'EADC':      adc used for calibrating energy
         'TADC':      adc used for calibrating TOF
-        'slope':     gamma calibration slope in channel/MeVee
-        'intercept': gamma calibration intercept in channel
-        'TAC':       TDC slope in ch/ns
+        'slope':     gamma calibration slope in MeVee/ch
+        'intercept': gamma calibration intercept in MeVee
+        'TAC':       TDC slope in ns/ch
         'Tgamma':    Time of gamma burst in raw TOF, used to calc T0 
         """
         self.mainwin=Qt.QSplitter(self)

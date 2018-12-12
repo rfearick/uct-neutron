@@ -37,7 +37,7 @@ class Calibration(object, metaclass=Singleton):
     def __init__(self):
         pass
 
-    def checkvars(self):
+    def asDict(self):
         ##return {key: getattr(self,key) for key in self.__slots__}
         vars={}
         for k in self.__slots__:
@@ -49,7 +49,7 @@ class Calibration(object, metaclass=Singleton):
         return vars
 
     def keys(self):
-        vars=self.checkvars()
+        vars=self.asDict()
         return vars.keys()
 
     def getData(self):
@@ -82,7 +82,7 @@ class Calibration(object, metaclass=Singleton):
         """
         k=self.keys()
         if 'slope' in k and 'intercept' in k:
-            return self.intercept+self.slope*E
+            return (E-self.intercept)/self.slope
         else:
             return 0.0
         
@@ -93,7 +93,7 @@ class Calibration(object, metaclass=Singleton):
         """
         k=self.keys()
         if 'slope' in k and 'intercept' in k:
-            return (ch-self.intercept)/self.slope
+            return self.intercept+self.slope*ch
         else:
             return 0.0
 

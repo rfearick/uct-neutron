@@ -181,20 +181,20 @@ class Calibrator(object):
         # from peakpos, avoid 'method of fools'
         for i in range(N):
             diff+=(peakpos[i+N]-peakpos[i])/N**2
-        print('mean peak spacing in TAC spectrum=', diff)
-        print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)")
+        #print('mean peak spacing in TAC spectrum=', diff)
+        #print('TAC calibration=',taccalstep/diff," ns/ch (for 20 ns tac calibrator)")
 
         # from linregress
-        tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
-        print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
+        tacslope, tacintercept,r,p,stderr=linregress(peakpos, np.arange(len(peakpos))*taccalstep)
+        #print('TAC calibration=',taccalstep/tacslope," n/chs (linregress)")
         #logger=logging.getLogger("neutrons")
         self.logger.info('mean peak spacing in TAC spectrum=%4.1f ch with calibrator setting %3.0f ns'%( diff,taccalstep))
-        self.logger.info('TAC calibration=%5.2f ch/ns (%3.0f ns calibrator setting)'%(diff/taccalstep,taccalstep))
-        self.logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
-        self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
-        self.calibration.TAC=tacslope/taccalstep
+        self.logger.info('TAC calibration=%5.3f ns/ch (%3.0f ns calibrator setting)'%(taccalstep/diff,taccalstep))
+        self.logger.info('TAC calibration=%5.3f %s, %5.3f'%(tacslope," ns/ch (linregress)",tacintercept))
+        self.TACcalibration=(tacslope,tacintercept) # ns/ch
+        self.calibration.TAC=tacslope
         
-        return tacslope/taccalstep,tacintercept/taccalstep,peakpos
+        return tacslope,tacintercept,peakpos
 
     def calibrateGamma(self,edges,chans):
         """
@@ -205,17 +205,17 @@ class Calibrator(object):
         returns:
             slope, intercept -- channel/MeVee,channel
         """
-        slope, intercept,r,p,stderr=linregress(edges,chans)
+        slope, intercept,r,p,stderr=linregress(chans,edges)
         divisor=self.hNa.divisor1
-        calibration=(slope*divisor,intercept*divisor) # convert to 1024 ch
+        calibration=(slope/divisor,intercept/divisor) # convert to 1024 ch
         calgamma=calibration
         d=AnalysisData()
         gain=d.calibration_gain
-        calibration=(calibration[0]/gain,calibration[1]/gain) # correct for change in gain
-        self.calibration.slope=calibration[0]  #ch/MeV at 1024 ch
-        self.calibration.intercept=calibration[1] # ch
+        calibration=(calibration[0]*gain,calibration[1]*gain) # correct for change in gain
+        self.calibration.slope=calibration[0]  #MeV/ch at 1024 ch
+        self.calibration.intercept=calibration[1] # MeV
         self.logger.info("L calibration corrected for extra gain of %4.0f"%(gain,))
-        self.logger.info("L calibration: slope,intercept=%6.2f %s %6.2f %s"%(calibration[0], " ch/MeV", calibration[1], " ch"))
+        self.logger.info("L calibration: slope,intercept=%6.4f %s %6.4f %s"%(calibration[0], " MeVee/ch", calibration[1], " MeVee"))
         self.logger.info("Calibration corrected to full event size (1024)")
         # return the calibration for the gamma spectra, with high gain setting
         return calgamma
@@ -264,9 +264,10 @@ class CalibrationPlotter(object):
         xlimits=(lo,hi+10)
         label="channel"
         if iscalib:
-            e=(e-intercept)/slope
+            e=e*slope+intercept #(e-intercept)/slope
             label="Energy (MeVee)"
-            xlimits=((xlimits[0]-intercept)/slope,(xlimits[1]-intercept)/slope)
+            #xlimits=((xlimits[0]-intercept)/slope,(xlimits[1]-intercept)/slope)
+            xlimits=xlimits[0]*slope+intercept,(xlimits[1]*slope+intercept)
         ax1.plot(e,data,drawstyle='steps-mid')
         ax1.set_ylabel(yl)
         ax1.set_xlabel(label)
@@ -322,7 +323,7 @@ class CalibrationPlotter(object):
         calibrated=False
         if 'slope' in cal.keys() and 'intercept' in cal.keys():
             divisor=self.hNa.divisor1
-            calibration=(cal.slope*gain/divisor,cal.intercept*gain/divisor)
+            calibration=(cal.slope/gain*divisor,cal.intercept/gain*divisor)
             slope,intercept=calibration
             calibrated=True
         else:
@@ -368,8 +369,9 @@ class CalibrationPlotter(object):
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/reject.png"), "cancel", self._calib_retry)
         self.ax5 =plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=4)
         if calibrated:
-            xt=np.linspace(0.0,5.0,100.0)
-            self.ax5.plot(edges,chans,'bo')
+            chmax=max(chans)
+            xt=np.linspace(0.0,chmax*1.1,100.0)
+            self.ax5.plot(chans,edges,'bo')
             self.ax5.plot(xt,intercept+xt*slope)       
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
@@ -427,11 +429,13 @@ class CalibrationPlotter(object):
         for x in peakpos:
             plt.axvline(x,color='r',alpha=0.4)
         plt.subplot(212)
-        plt.plot(np.arange(len(peakpos))*taccalstep,peakpos,'bo')
-        plt.plot(np.arange(len(peakpos))*taccalstep,
-                 (np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
-        plt.xlabel("Time [ns]")
-        plt.ylabel("Channel")
+        plt.plot(peakpos,np.arange(len(peakpos))*taccalstep,'bo')
+        #plt.plot(np.arange(len(peakpos))*taccalstep,
+        #         (np.arange(len(peakpos))*tacslope+tacintercept)*taccalstep)
+        plt.plot(np.arange(1000.0),
+                 np.arange(1000.0)*tacslope+tacintercept)
+        plt.ylabel("Time [ns]")
+        plt.xlabel("Channel")
         plt.tight_layout()
 
     def plot_gamma_calibration(self, slope, intercept):
@@ -441,14 +445,15 @@ class CalibrationPlotter(object):
         self.ax5.cla()
         if slope is not None and intercept is not None:
             divisor=self.hNa.divisor1
-            slope=slope/divisor
-            intercept=intercept/divisor
-            xt=np.linspace(0.0,5.0,100.0)
+            slope=slope*divisor
+            intercept=intercept*divisor
+            chmax=int(max(chans)*1.1)
+            xt=np.linspace(0.0,chmax,100.0)
             #print("replot")
-            self.ax5.plot(edges,chans,'bo')
+            self.ax5.plot(chans,edges,'bo')
             self.ax5.plot(xt,intercept+xt*slope)
-        self.ax5.set_xlabel("Energy (MeVee)")
-        self.ax5.set_ylabel("Channel")
+        self.ax5.set_ylabel("Energy (MeVee)")
+        self.ax5.set_xlabel("Channel")
         calibration=(slope,intercept)
         active=self.calibrator.activegamma
         for source in active:

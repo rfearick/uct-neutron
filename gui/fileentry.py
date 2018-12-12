@@ -251,7 +251,7 @@ class FilePicker(QTabWidget):
         """
         fkey=files.keys()
         for f in fkey:
-            getattr(self, f).setFile(files[f])
+            getattr(self, "edit"+f).setFile(files[f])
         """
         if 'Na' in fkey: self.editNa.setFile(files['Na'])
         if 'Co' in fkey: self.editCo.setFile(files['Co'])

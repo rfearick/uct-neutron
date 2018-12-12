@@ -13,6 +13,9 @@ import logging
 
 from .analysisdata import Calibration, AnalysisData
 
+from PyQt5 import Qt
+from . import __path__ as packagepath
+
 """
 Calibrate neutron detector using gamma ray sources.
 
@@ -219,6 +222,12 @@ class Calibrator(object):
         # return the calibration for the gamma spectra, with high gain setting
         return calgamma
 
+    def resetGammaCalibration(self):
+        self.calibration.slope=None
+        self.calibration.intercept=None
+        del self.calibration.slope
+        del self.calibration.intercept
+
 
 class CalibrationPlotter(object):
     """
@@ -348,6 +357,10 @@ class CalibrationPlotter(object):
         
         self.f5=plt.figure("Gamma calibration",(4,4))
         self.f5.canvas.draw_idle()
+        tb=self.f5.canvas.manager.toolbar
+        tb.addSeparator()
+        a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/select_ok.png"), "ok", self._calib_ok)
+        a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/reject.png"), "cancel", self._calib_retry)
         self.ax5 =plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=4)
         if calibrated:
             xt=np.linspace(0.0,5.0,100.0)
@@ -356,6 +369,32 @@ class CalibrationPlotter(object):
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
         plt.tight_layout()
+
+    def _calib_ok(self):
+        global edges, chans
+        cal=self.calibrator.activegamma
+        totlen=0
+        totnone=0
+        edges=[]
+        chans=[]
+        for source in cal:
+            v=self.calibrator.comptonchannels[source]
+            e=self.calibrator.comptonedges[source]
+            l=len(v)
+            totlen+=l
+            for i in range(l):
+                if v[i]!=None:
+                    chans.append(v[i])
+                    edges.append(e[i])
+            print(chans,edges)
+        if len(edges)>3:
+            slope,intercept=self.calibrator.calibrateGamma(edges,chans)
+            self.plot_gamma_calibration(slope,intercept)
+    
+    def _calib_retry(self):
+        self.calibrator.resetGammaCalibration()
+        self.plot_gamma_calibration(None,None)
+        return
 
 
     def plot_TAC_spectra(self):
@@ -387,14 +426,15 @@ class CalibrationPlotter(object):
         """
         replot the gamma spectrum using a calibration
         """
-        divisor=self.hNa.divisor1
-        slope=slope/divisor
-        intercept=intercept/divisor
-        xt=np.linspace(0.0,5.0,100.0)
-        #print("replot")
         self.ax5.cla()
-        self.ax5.plot(edges,chans,'bo')
-        self.ax5.plot(xt,intercept+xt*slope)
+        if slope is not None and intercept is not None:
+            divisor=self.hNa.divisor1
+            slope=slope/divisor
+            intercept=intercept/divisor
+            xt=np.linspace(0.0,5.0,100.0)
+            #print("replot")
+            self.ax5.plot(edges,chans,'bo')
+            self.ax5.plot(xt,intercept+xt*slope)
         self.ax5.set_xlabel("Energy (MeVee)")
         self.ax5.set_ylabel("Channel")
         calibration=(slope,intercept)
@@ -441,6 +481,7 @@ class CalibrationPlotter(object):
         #print(tb._active)
         if tb._active is not None and ('PAN' in tb._active or 'ZOOM' in tb._active):
             return
+        # different approach if using toolmanager
         #tm=self.f1.canvas.manager.toolmanager
         #print('tbmode',tb)
         #print('tmmode',tm.active_toggle)
@@ -521,6 +562,7 @@ class CalibrationPlotter(object):
         totnone=0
         #edges=[]
         #chans=[]
+        """
         for source in cal:
             v=self.calibrator.comptonchannels[source]
             e=self.calibrator.comptonedges[source]
@@ -534,7 +576,7 @@ class CalibrationPlotter(object):
         if len(edges)>3:
             slope,intercept=self.calibrator.calibrateGamma(edges,chans)
             self.plot_gamma_calibration(slope,intercept)
-           
+         """  
             
         
     def _annotate_selection(self, x, currentaxes, comptonedge, currentfig):

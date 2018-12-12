@@ -75,6 +75,7 @@ class Calibrator(object):
                   'Cs':[None],
                   'AmBe':[None,None]
                    }
+    
     def __init__( self, infileNa, infileCo, infileCs, infileAmBe, infileTAC):
         self.activegamma=[]
         self.infileNa = infileNa
@@ -157,7 +158,6 @@ class Calibrator(object):
         # scan through data and get mean peak positions in a fairly crude search
         x=np.arange(N)
         i=2
-        #print(N)
         while i<N-6:
             if data[i]==0 and data[i+5]==0:
                 s=np.sum(data[i:i+6])
@@ -165,28 +165,25 @@ class Calibrator(object):
                     s=np.sum(data[i:i+6]*x[i:i+6])
                     s=s/np.sum(data[i:i+6])
                     peakpos.append(s)
-                    #print(i,s,data[i])
-                    #print(data[i:i+6],x[i:i+6])
                     i=i+5
                 else:
                     i=i+1
             else:
                 i=i+1
-        #print(i)
-
+ 
         #calculate tac calibration in channels/ns
-        #print(peakpos)
         peakpos=np.array(peakpos)
         N=len(peakpos)//2
         d=AnalysisData()
-        taccalstep=d.TAC_interval # 20 ns
+        taccalstep=d.TAC_interval # was fixed 20 ns
         diff=0.0
+        
         # from peakpos, avoid 'method of fools'
         for i in range(N):
-            #print(peakpos[i+N]-peakpos[i])
             diff+=(peakpos[i+N]-peakpos[i])/N**2
         print('mean peak spacing in TAC spectrum=', diff)
         print('TAC calibration=',diff/taccalstep," ch/ns (for 20 ns tac calibrator)")
+
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(np.arange(len(peakpos)),peakpos)
         print('TAC calibration=',tacslope/taccalstep," ch/ns (linregress)")
@@ -196,6 +193,7 @@ class Calibrator(object):
         self.logger.info('TAC calibration=%5.2f %s %5.2f'%(tacslope/taccalstep," ch/ns (linregress)",tacintercept))
         self.TACcalibration=(tacslope/taccalstep,tacintercept/taccalstep) # ch/ns
         self.calibration.TAC=tacslope/taccalstep
+        
         return tacslope/taccalstep,tacintercept/taccalstep,peakpos
 
     def calibrateGamma(self,edges,chans):
@@ -243,9 +241,8 @@ class CalibrationPlotter(object):
         self.hTAC = calibrator.hTAC
         self.histo={'Na':self.hNa,'Co':self.hCo, 'Cs':self.hCs,'AmBe':self.hAmBe,'TAC':self.hTAC}
         self.figures={}
-        #self.selecting=False
-  
-    # Make 3 pairs of axes for spectra and their 1st derivatives, and one for
+        
+    # Make 4 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.
     def plot_calib_spectrum( self, axgroup, hist, calib, xlimits, ylimits):
         """
@@ -295,8 +292,8 @@ class CalibrationPlotter(object):
             if data[i]>cut:
                 break
         hi=i
-        dlo=np.argmin(diffdata)#find_imin(diffdata)
-        dhi=np.argmax(diffdata)#find_imax(diffdata)
+        dlo=np.argmin(diffdata)
+        dhi=np.argmax(diffdata)
         return (lo,hi,dlo,dhi)
         
 
@@ -318,7 +315,8 @@ class CalibrationPlotter(object):
             top2=[(2,0),(2,0),(2,0),(2,0)]
         else:
             raise ValueError
-        cal=self.calibrator.calibration
+        #cal=self.calibrator.calibration
+        cal=Calibration()
         d=AnalysisData()
         gain=d.calibration_gain
         calibrated=False
@@ -338,25 +336,32 @@ class CalibrationPlotter(object):
             if style=='multi':
                 fign=plt.figure(source,page)
             f1=fign
+            # plots are interactive - redraw on idle
             f1.canvas.draw_idle()
+            # 2 plots per source -- show derivative as well for edge selection
             ax11=plt.subplot2grid( (4,4), top1[0],colspan=csp,rowspan=rsp)
             ax12=plt.subplot2grid( (4,4), top2[0],colspan=csp,rowspan=rsp)
             axesgroup=(ax11,ax12)
+            # what we plot
             h=self.histo[source]
+            # plot spectrum
             self.plot_calib_spectrum( axesgroup, h, calibration, (0,120), (None,None))
+            # save info indict
             self.figures[source]={}
             self.figures[source]['figure']=f1
             self.figures[source]['axes']=axesgroup
             self.figures[source]['histo']=h
+            # set callbacks for mouse actions
             self.figures[source]['click']=f1.canvas.mpl_connect('button_press_event',
                                                   self.pos_callback)
             self.figures[source]['enter']=f1.canvas.mpl_connect('axes_enter_event',
                                                   self.fig_callback)
             plt.tight_layout()
             
-        
+        # separate plot for the actual calibration
         self.f5=plt.figure("Gamma calibration",(4,4))
         self.f5.canvas.draw_idle()
+        # add our stuff to the toolbar
         tb=self.f5.canvas.manager.toolbar
         tb.addSeparator()
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/select_ok.png"), "ok", self._calib_ok)
@@ -371,6 +376,11 @@ class CalibrationPlotter(object):
         plt.tight_layout()
 
     def _calib_ok(self):
+        """
+        When enough calibration points have been added click on "ok" on plot window
+        to send message to here.
+        Perform the calibration in this callback.
+        """
         global edges, chans
         cal=self.calibrator.activegamma
         totlen=0
@@ -392,10 +402,12 @@ class CalibrationPlotter(object):
             self.plot_gamma_calibration(slope,intercept)
     
     def _calib_retry(self):
+        """
+        Cancel calibration event comes here.
+        Reset the calibration to None and permit adding more points
+        """
         self.calibrator.resetGammaCalibration()
         self.plot_gamma_calibration(None,None)
-        return
-
 
     def plot_TAC_spectra(self):
         """
@@ -465,32 +477,25 @@ class CalibrationPlotter(object):
         tree.appendRow(ploticon)
         ploticon.setData(self)
 
-        
-    # define callbacks for matplotlib multicursor
     def pos_callback(self, event):
         """
-        read position in data coords when mouse button clicked.
-        put data into chan array at correct index.
-        when all 4 data points, calibrate and plot line .       
-        this also has to handle adjustment of calibration when calibrated.
-        gets tricky for AmBe.
+        To read position of multicursor when mouse button clicked.
+        Read position in data coords when mouse button clicked.
+        This also has to handle adjustment of calibration when calibrated.
+        Gets tricky for AmBe.
         """
         print('Enter pos_callback')
         #tb=self.f1.canvas.manager.toolbar
         tb=event.canvas.manager.toolbar
-        #print(tb._active)
         if tb._active is not None and ('PAN' in tb._active or 'ZOOM' in tb._active):
             return
         # different approach if using toolmanager
         #tm=self.f1.canvas.manager.toolmanager
-        #print('tbmode',tb)
-        #print('tmmode',tm.active_toggle)
-        #print(tm.tools)
         #if 'pan' in tm.active_toggle['default']:
         #    return
         ax=event.inaxes
         xdata=event.xdata
-        cal=self.calibrator.calibration
+        cal=Calibration()
         if 'slope' in cal.keys() and 'intercept' in cal.keys():
             # calibrated, xdata is in MeV: convert to channels
             xdata=cal.channel(xdata) # convert to channel
@@ -523,22 +528,9 @@ class CalibrationPlotter(object):
             currentaxes=self.figures['AmBe']['axes']
             comptonedge=self.calibrator.comptonedges['AmBe']
             source='AmBe'
-            """
-            if chans[2]==None:
-                chans[2]=xdata
-            elif chans[3]==None:
-                chans[3]=xdata
-            else:
-                # both present: adjust nearest
-                s1=abs(chans[2]-xdata)
-                s2=abs(chans[3]-xdata)
-                if s2>s1:
-                    chans[2]=xdata
-                else:
-                    chans[3]=xdata
-            """
         else:
             return
+        
         currentaxes[0].axvline(event.xdata)
         x=event.xdata
         currentaxes[1].axvline(event.xdata)
@@ -546,38 +538,7 @@ class CalibrationPlotter(object):
             self.calibrator.comptonchannels[source][0]=xdata
         else:    
             self._annotate_selection(x, currentaxes, comptonedge,currentfig)
-        print('pos_callback',currentfig['click'])
-        """
-        if chans[0] is not None and chans[1] is not None and chans[2] is not None and chans[3] is not None:
-            if chans[2]>chans[3]:
-                c3=chans[2]
-                c2=chans[3]
-                chans[2]=c2
-                chans[3]=c3
-            slope,intercept=self.calibrator.calibrateGamma(edges,chans)
-            self.plot_gamma_calibration(slope,intercept)
-        """
         cal=self.calibrator.activegamma
-        totlen=0
-        totnone=0
-        #edges=[]
-        #chans=[]
-        """
-        for source in cal:
-            v=self.calibrator.comptonchannels[source]
-            e=self.calibrator.comptonedges[source]
-            l=len(v)
-            totlen+=l
-            for i in range(l):
-                if v[i]!=None:
-                    chans.append(v[i])
-                    edges.append(e[i])
-            print(chans,edges)
-        if len(edges)>3:
-            slope,intercept=self.calibrator.calibrateGamma(edges,chans)
-            self.plot_gamma_calibration(slope,intercept)
-         """  
-            
         
     def _annotate_selection(self, x, currentaxes, comptonedge, currentfig):
         if len(comptonedge)==1: return
@@ -604,18 +565,12 @@ class CalibrationPlotter(object):
         self.cidp=currentfig['figure'].canvas.mpl_connect('pick_event',self.pick_callback)
         print(ann1,ann2)
         currentfig['pickchoices']=(ann1,ann2)
-        #self.multi.disconnect()
-        #self.multi=None
-        #self.selecting=True
         
     def pick_callback(self, event):
-        print('picked')
-        print('event',event.artist)
-        print('event.artist',event.artist.get_text())
-        print('event',event.name)
+        """
+        Callback for pick of calibration energy choice.
+        """
         mevent=event.mouseevent
-        print('mevent',mevent.x,mevent.y,mevent.inaxes)
-        #print('x',x)
         artist=event.artist
         canvas=event.canvas
         inaxes=event.mouseevent.inaxes
@@ -629,12 +584,10 @@ class CalibrationPlotter(object):
                     p1,p2=self.figures[source]['pickchoices']
                     if artist == p1:
                         t=p1.get_text().split(' ')
-                        #self.calibrator.comptonchannels[source][0]=float(t[0])
                         self.calibrator.comptonchannels[source][0]=p1.xy[0]
                         print('selection',t)
                     elif artist == p2:
                         t=p2.get_text().split(' ')
-                        #self.calibrator.comptonchannels[source][1]=float(t[0])
                         self.calibrator.comptonchannels[source][1]=p1.xy[0]
                         print('selection',t)
                       
@@ -645,9 +598,7 @@ class CalibrationPlotter(object):
                 currentaxes=axes
                 currentfig=self.figures[source]
             
-                #currentfig['figure'].canvas.mpl_disconnect(currentfig['pickcid'])
                 currentfig['figure'].canvas.mpl_disconnect(self.cidp)
-                print('click source',self.figures[source]['click'])
                 self.figures[source]['click']=currentfig['figure'].canvas.mpl_connect('button_press_event', self.pos_callback)
         
         return True

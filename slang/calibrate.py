@@ -31,9 +31,9 @@ Differentiating the spectrum and choosing the lowest point in the region of the
 Compton edge seems to work well enough for scintillation detectors.
 See Safari et al., ArXiv 1610.09185
 
-This simple demo presents 3 different calibration spectra and allows the user
+This code presents 3 or 4  different calibration spectra and allows the user
 to select the calibration points. When all calibration points are selected, the 
-calibration is calculated via linear regression, and plotted in a 4th view.
+calibration is calculated via linear regression, and plotted in a 5th view.
 
 Assumes all gamma calibration histos are same len.  
 """

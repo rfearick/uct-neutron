@@ -550,7 +550,8 @@ class CalibrationPlotter(object):
         ylims=currentaxes[0].get_ylim()
         dely=(ylims[1]-ylims[0])*0.12
         y=ylims[1]-dely
-        edgestr="%.3f MeV"%(comptonedge[0])
+        # annotate with both energies, highest on top
+        edgestr="%.3f MeV"%(comptonedge[1])
         ann1=currentaxes[0].annotate(edgestr,
                                 xy=(x,y-dely), xycoords='data',
                                 xytext=(x+10,y), textcoords='data',
@@ -558,11 +559,10 @@ class CalibrationPlotter(object):
                                 arrowprops=dict(arrowstyle="->",
                                                 connectionstyle="angle,angleA=-90,angleB=180"),
                                 picker=True)
-        #ann1.set_visible(True)
-        edgestr="%.3f MeV"%(comptonedge[1])
+        edgestr="%.3f MeV"%(comptonedge[0])
         ann2=currentaxes[0].annotate(edgestr,
-                                xy=(x,y-3.5*dely), xycoords='data',
-                                xytext=(x+10,y-3.5*dely), textcoords='data',
+                                xy=(x,y-4.0*dely), xycoords='data',
+                                xytext=(x+10,y-3.0*dely), textcoords='data',
                                 bbox=dict(boxstyle="round", fc="w"),
                                 arrowprops=dict(arrowstyle="->",
                                                 connectionstyle="angle,angleA=-90,angleB=180"),picker=True)
@@ -589,11 +589,11 @@ class CalibrationPlotter(object):
                     p1,p2=self.figures[source]['pickchoices']
                     if artist == p1:
                         t=p1.get_text().split(' ')
-                        self.calibrator.comptonchannels[source][0]=p1.xy[0]
+                        self.calibrator.comptonchannels[source][1]=p1.xy[0]
                         print('selection',t)
                     elif artist == p2:
                         t=p2.get_text().split(' ')
-                        self.calibrator.comptonchannels[source][1]=p1.xy[0]
+                        self.calibrator.comptonchannels[source][0]=p1.xy[0]
                         print('selection',t)
                       
                     p1.set_visible(False)

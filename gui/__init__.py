@@ -1,2 +1,2 @@
 
-__all__=["testgui"]
+__all__=["slanggui"]

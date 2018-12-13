@@ -1,9 +1,9 @@
 """
-==========
-testgui.py
-==========
+===========
+slanggui.py
+===========
 
-Demonstration of GUI for neutron TOF analysis.
+GUI for Shared Listmode Analyser for Neutrons and Gammas.
 
 Sort lst files and display histograms for NE213 and FC detectors.
 
@@ -648,7 +648,7 @@ class ListLogger(object):
     def flush(self):
         pass
 
-class NeutronAnalysisDemo(Qt.QMainWindow):
+class NeutronAnalysisGui(Qt.QMainWindow):
     """
     Main application container  widget
 
@@ -1159,9 +1159,9 @@ class NeutronAnalysisDemo(Qt.QMainWindow):
 if __name__=="__main__":        
     # Admire! 
     app = Qt.QApplication(sys.argv)
-    demo=NeutronAnalysisDemo()
-    demo.setWindowTitle("The Amazing List File Sorter")
-    demo.show()
+    gui=NeutronAnalysisGui()
+    gui.setWindowTitle("Shared Listmode Analyser for Neutrons and Gammas")
+    gui.show()
     #demo.startSorting()
     #app.aboutToQuit.connect(demo.closeAll)
     sys.exit(app.exec_())

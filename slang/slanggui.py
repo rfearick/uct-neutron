@@ -743,14 +743,15 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         self.btnSaveExpt.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         self.btnSaveExpt.setToolTip("Save list of experiment file names")
         toolBar.addWidget(self.btnSaveExpt)
-        
+
+        """
         self.btnPrint = Qt.QToolButton(toolBar)
         self.btnPrint.setText("Print")
         self.btnPrint.setIcon(Qt.QIcon(Qt.QPixmap(icons.print_xpm)))
         self.btnPrint.setToolButtonStyle(Qt.Qt.ToolButtonTextUnderIcon)
         self.btnPrint.setToolTip("One day, may print something")
         toolBar.addWidget(self.btnPrint)
-
+        """
         
         self.btnSaveData = Qt.QToolButton(toolBar)
         self.btnSaveData.setText("data")
@@ -1149,13 +1150,14 @@ class NeutronAnalysisGui(Qt.QMainWindow):
                 logger.error("Invalid input")
         #self.editMaxevent.setText("None")
         
-            
+    """        
     def printPlot(self):
         """
         Placeholder.
         """
         p = QPrinter()
-
+    """
+        
 if __name__=="__main__":        
     # Admire! 
     app = Qt.QApplication(sys.argv)

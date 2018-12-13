@@ -69,7 +69,7 @@ logger.setLevel(logging.INFO)
 from .supportclasses import PlotTreeModel, PlotTreeView
 from .analysisdata import Calibration, AnalysisData
 
-import gui.icons as icons   # part of this package -- toolbar icons
+import slang.icons as icons   # part of this package -- toolbar icons
 import time
 
 plt.ion()       # turn on interactive mode of matplotlib
@@ -884,7 +884,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         self.bthread.quit()
         logger.info("End background task: "+self.sorttype)
         if self.sorttype=="Calibrate":
-            import gui.calibrate as calibrator
+            from . import calibrate as calibrator
             tree=self.plotmodel
             branch=tree.appendGroup( "Calibration" )
             #item=Qt.QStandardItem(Qt.QIcon(Qt.QPixmap(icons.pwspec)),"calib")       
@@ -919,7 +919,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         elif sorttype=="Sort FC":
             self.startSorting(SetupFCSort)
         elif sorttype=="Calibrate":
-            import gui.calibrate as calibrator
+            from . import calibrate as calibrator
             # use 'get' below so default None is returned by no-shows.
             self.calibrator=calibrator.Calibrator(self.filepick.files.get('Na'),
                                                   self.filepick.files.get('Co'),

@@ -3,7 +3,7 @@ import platform
 import matplotlib
 matplotlib.use("Qt5Agg")
 
-from gui.eventlist import *
+from .eventlist import *
 
 import numpy as np
 import matplotlib.pyplot as plt

@@ -366,7 +366,9 @@ class CalibrationPlotter(object):
         tb=self.f5.canvas.manager.toolbar
         tb.addSeparator()
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/select_ok.png"), "ok", self._calib_ok)
+        a.setToolTip("Accept calibration")
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/reject.png"), "cancel", self._calib_retry)
+        a.setToolTip("Undo calibration")
         self.ax5 =plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=4)
         if calibrated:
             chmax=max(chans)

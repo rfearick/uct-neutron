@@ -1152,9 +1152,9 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         
     """        
     def printPlot(self):
-        """
+        '''
         Placeholder.
-        """
+        '''
         p = QPrinter()
     """
         

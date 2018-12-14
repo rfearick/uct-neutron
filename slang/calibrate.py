@@ -260,7 +260,7 @@ class CalibrationPlotter(object):
         isylimit=ylimits[0]!=None and ylimits[1]!=None
         e=np.arange(hist.size1)
         lo,hi,dlo,dhi=self.limit_calib_spectrum(data, diffdata)
-        print(lo,hi,dlo,dhi)
+        #print(lo,hi,dlo,dhi)
         xlimits=(lo,hi+10)
         label="channel"
         if iscalib:
@@ -400,7 +400,7 @@ class CalibrationPlotter(object):
                 if v[i]!=None:
                     chans.append(v[i])
                     edges.append(e[i])
-            print(chans,edges)
+            #print(chans,edges)
         if len(edges)>3:
             slope,intercept=self.calibrator.calibrateGamma(edges,chans)
             self.plot_gamma_calibration(slope,intercept)
@@ -445,26 +445,31 @@ class CalibrationPlotter(object):
         replot the gamma spectrum using a calibration
         """
         self.ax5.cla()
-        if slope is not None and intercept is not None:
-            divisor=self.hNa.divisor1
+        active=self.calibrator.activegamma
+        calibration_done=slope is not None and intercept is not None
+        self.ax5.plot(chans,edges,'bo')
+        chmax=int(max(chans)*1.1)
+        xt=np.linspace(0.0,chmax,100.0)
+        if calibration_done:
+            # all sources sorted into same length histo, so pick first...
+            divisor=self.figures[active[0]]['histo'].divisor1
             slope=slope*divisor
             intercept=intercept*divisor
-            chmax=int(max(chans)*1.1)
-            xt=np.linspace(0.0,chmax,100.0)
-            #print("replot")
-            self.ax5.plot(chans,edges,'bo')
             self.ax5.plot(xt,intercept+xt*slope)
+        else:
+            temp_slope, temp_intercept,r,p,stderr=linregress(chans,edges)
+            self.ax5.plot(xt,temp_intercept+xt*temp_slope,alpha=0.5)           
         self.ax5.set_ylabel("Energy (MeVee)")
         self.ax5.set_xlabel("Channel")
-        calibration=(slope,intercept)
-        active=self.calibrator.activegamma
-        for source in active:
-            axesgroup=self.figures[source]['axes']
-            h=self.figures[source]['histo']
-            axesgroup[0].cla()
-            axesgroup[1].cla()
-            self.plot_calib_spectrum( axesgroup, h,
-                                  calibration, (0,120), (None,None))
+        if calibration_done:
+            calibration=(slope,intercept)
+            for source in active:
+                axesgroup=self.figures[source]['axes']
+                h=self.figures[source]['histo']
+                axesgroup[0].cla()
+                axesgroup[1].cla()
+                self.plot_calib_spectrum( axesgroup, h,
+                                      calibration, (0,120), (None,None))
         
     def plot_all_spectra(self):
         """
@@ -491,7 +496,8 @@ class CalibrationPlotter(object):
         This also has to handle adjustment of calibration when calibrated.
         Gets tricky for AmBe.
         """
-        print('Enter pos_callback')
+        #global chans, edges
+        #print('Enter pos_callback')
         #tb=self.f1.canvas.manager.toolbar
         tb=event.canvas.manager.toolbar
         if tb._active is not None and ('PAN' in tb._active or 'ZOOM' in tb._active):
@@ -543,9 +549,25 @@ class CalibrationPlotter(object):
         currentaxes[1].axvline(event.xdata)
         if len(comptonedge)==1:
             self.calibrator.comptonchannels[source][0]=xdata
+            self.check_for_calibration_plot()
         else:    
             self._annotate_selection(x, currentaxes, comptonedge,currentfig)
-        cal=self.calibrator.activegamma
+
+    def check_for_calibration_plot(self):
+        global edges, chans
+        active=self.calibrator.activegamma
+        edges=[]
+        chans=[]
+        for source in active:
+            v=self.calibrator.comptonchannels[source]
+            e=self.calibrator.comptonedges[source]
+            l=len(v)
+            for i,vi in enumerate(v):
+                if vi!=None:
+                    chans.append(vi)
+                    edges.append(e[i])
+        if len(edges)>=3:
+            self.plot_gamma_calibration(None,None)
         
     def _annotate_selection(self, x, currentaxes, comptonedge, currentfig):
         if len(comptonedge)==1: return
@@ -570,7 +592,7 @@ class CalibrationPlotter(object):
                                                 connectionstyle="angle,angleA=-90,angleB=180"),picker=True)
         currentfig['figure'].canvas.mpl_disconnect(currentfig['click'])
         self.cidp=currentfig['figure'].canvas.mpl_connect('pick_event',self.pick_callback)
-        print(ann1,ann2)
+        #print(ann1,ann2)
         currentfig['pickchoices']=(ann1,ann2)
         
     def pick_callback(self, event):
@@ -587,17 +609,17 @@ class CalibrationPlotter(object):
         
             if inaxes in axes:
                 if artist in self.figures[source]['pickchoices']:
-                    print("In pickchoices")
+                    #print("In pickchoices")
                     p1,p2=self.figures[source]['pickchoices']
                     if artist == p1:
                         t=p1.get_text().split(' ')
                         self.calibrator.comptonchannels[source][1]=p1.xy[0]
-                        print('selection',t)
+                        #print('selection',t)
                     elif artist == p2:
                         t=p2.get_text().split(' ')
                         self.calibrator.comptonchannels[source][0]=p1.xy[0]
-                        print('selection',t)
-                      
+                        #print('selection',t)
+                    self.check_for_calibration_plot()
                     p1.set_visible(False)
                     p2.set_visible(False)
                     self.figures[source]['pickchoices']=(None,None)

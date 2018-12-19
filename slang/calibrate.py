@@ -244,7 +244,7 @@ class CalibrationPlotter(object):
         
     # Make 4 pairs of axes for spectra and their 1st derivatives, and one for
     # calibrations.
-    def plot_calib_spectrum( self, axgroup, hist, calib, xlimits, ylimits):
+    def plot_calib_spectrum( self, axgroup, hist, calib, xlimits, ylimits, source):
         """
         Plot a calibration spectrum of hist in axes of axgroup
         axgroup: pair of axes in tuple
@@ -273,6 +273,16 @@ class CalibrationPlotter(object):
         ax1.set_xlabel(label)
         ax1.set_xlim(*xlimits)
         if isylimit: ax1.set_ylim(*ylimits)
+        for i in range(len(self.calibrator.comptonedges[source])):
+            xi=self.calibrator.comptonchannels[source][i]
+            edge=self.calibrator.comptonedges[source][i]
+            if xi != None:
+                dx=10
+                if iscalib:
+                    cal=calib
+                else:
+                    cal=None
+                anni=self._annotate_marker(ax1, i, xi, edge, cal)
         ax2.plot(e,diffdata,drawstyle='steps-mid')
         ax2.set_ylabel(yl)
         ax2.set_xlabel(label)
@@ -346,7 +356,7 @@ class CalibrationPlotter(object):
             # what we plot
             h=self.histo[source]
             # plot spectrum
-            self.plot_calib_spectrum( axesgroup, h, calibration, (0,120), (None,None))
+            self.plot_calib_spectrum( axesgroup, h, calibration, (0,120), (None,None),source)
             # save info indict
             self.figures[source]={}
             self.figures[source]['figure']=f1
@@ -360,7 +370,7 @@ class CalibrationPlotter(object):
             plt.tight_layout()
             
         # separate plot for the actual calibration
-        self.f5=plt.figure("Gamma calibration",(4,4))
+        self.f5=plt.figure("Gamma calibration",(6,4))
         self.f5.canvas.draw_idle()
         # add our stuff to the toolbar
         tb=self.f5.canvas.manager.toolbar
@@ -374,7 +384,8 @@ class CalibrationPlotter(object):
             chmax=max(chans)
             xt=np.linspace(0.0,chmax*1.1,100.0)
             self.ax5.plot(chans,edges,'bo')
-            self.ax5.plot(xt,intercept+xt*slope)       
+            self.ax5.plot(xt,intercept+xt*slope)
+                
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
         plt.tight_layout()
@@ -469,7 +480,7 @@ class CalibrationPlotter(object):
                 axesgroup[0].cla()
                 axesgroup[1].cla()
                 self.plot_calib_spectrum( axesgroup, h,
-                                      calibration, (0,120), (None,None))
+                                          calibration, (0,120), (None,None), source)
         
     def plot_all_spectra(self):
         """
@@ -519,30 +530,18 @@ class CalibrationPlotter(object):
          
         ag=self.calibrator.activegamma
         if 'Na' in ag and ax in self.figures['Na']['axes']:
-            currentfig=self.figures['Na']
-            currentaxes=self.figures['Na']['axes']
-            #chans[0]=xdata
-            comptonedge=self.calibrator.comptonedges['Na']
             source='Na'
         elif 'Co' in ag and ax in self.figures['Co']['axes']:
-            currentfig=self.figures['Co']
-            currentaxes=self.figures['Co']['axes']
-            #chans[1]=xdata
-            comptonedge=self.calibrator.comptonedges['Co']
             source='Co'
         elif 'Cs' in ag and ax in self.figures['Cs']['axes']:
-            currentfig=self.figures['Cs']
-            currentaxes=self.figures['Cs']['axes']
-            #chans[1]=xdata
-            comptonedge=self.calibrator.comptonedges['Cs']
             source='Cs'
         elif 'AmBe' in ag and ax in self.figures['AmBe']['axes']:
-            currentfig=self.figures['AmBe']
-            currentaxes=self.figures['AmBe']['axes']
-            comptonedge=self.calibrator.comptonedges['AmBe']
             source='AmBe'
         else:
             return
+        currentfig=self.figures[source]
+        currentaxes=self.figures[source]['axes']
+        comptonedge=self.calibrator.comptonedges[source]
         
         currentaxes[0].axvline(event.xdata)
         x=event.xdata
@@ -575,25 +574,35 @@ class CalibrationPlotter(object):
         dely=(ylims[1]-ylims[0])*0.12
         y=ylims[1]-dely
         # annotate with both energies, highest on top
-        edgestr="%.3f MeV"%(comptonedge[1])
-        ann1=currentaxes[0].annotate(edgestr,
-                                xy=(x,y-dely), xycoords='data',
-                                xytext=(x+10,y), textcoords='data',
-                                bbox=dict(boxstyle="round", fc="w"),
-                                arrowprops=dict(arrowstyle="->",
-                                                connectionstyle="angle,angleA=-90,angleB=180"),
-                                picker=True)
-        edgestr="%.3f MeV"%(comptonedge[0])
-        ann2=currentaxes[0].annotate(edgestr,
-                                xy=(x,y-4.0*dely), xycoords='data',
-                                xytext=(x+10,y-3.0*dely), textcoords='data',
-                                bbox=dict(boxstyle="round", fc="w"),
-                                arrowprops=dict(arrowstyle="->",
-                                                connectionstyle="angle,angleA=-90,angleB=180"),picker=True)
+        ann1=self._annotate_marker(currentaxes[0], 0, x, comptonedge[1], None, picker=True)
+        ann2=self._annotate_marker(currentaxes[0], 1, x, comptonedge[0], None, picker=True)
         currentfig['figure'].canvas.mpl_disconnect(currentfig['click'])
         self.cidp=currentfig['figure'].canvas.mpl_connect('pick_event',self.pick_callback)
-        #print(ann1,ann2)
         currentfig['pickchoices']=(ann1,ann2)
+
+    def _annotate_marker(self, ax, ipos, x, value, calib, picker=False):
+        dx=10
+        if calib is not None:
+            sl,icpt=calib
+            x=sl*x+icpt
+            dx=sl*dx+icpt
+        ylims=ax.get_ylim()
+        dy=(ylims[1]-ylims[0])*0.12
+        y=ylims[1]-dy
+        edgestr="%.3f MeV"%(value,)
+        offy=(-1.1,-4.0)[ipos]
+        offtexty=(-0.1,-3.0)[ipos]
+        ann=ax.annotate(edgestr,
+                        xy=(x,y+offy*dy), xycoords='data',
+                        xytext=(x+dx,y+offtexty*dy), textcoords='data',
+                        bbox=dict(boxstyle="round", fc="w"),
+                        arrowprops=dict(arrowstyle="->",
+                                        connectionstyle="angle,angleA=-90,angleB=180"),
+                        picker=picker)
+        ax.axvline(x)
+
+        return ann
+        
         
     def pick_callback(self, event):
         """

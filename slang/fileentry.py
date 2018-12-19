@@ -4,7 +4,8 @@ import configparser
 from PyQt5 import Qt, QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 
-from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QLabel
+from PyQt5.QtWidgets import (QWidget, QTabWidget, QVBoxLayout, QHBoxLayout,
+                             QLabel, QGroupBox, QRadioButton)
 from PyQt5.QtWidgets import QLineEdit
 
 import logging
@@ -150,6 +151,7 @@ class FilePicker(QTabWidget):
         self.files={}
         
         self._makeDataTab()
+        self.addTab( self.calibfiles, "Calibration" )
         self._makeCalibTab()
         self._makeNE213Tab()
         self._makeFCTab()
@@ -162,7 +164,7 @@ class FilePicker(QTabWidget):
         #f=getattr(self, "edit_"+tag)
         layout.addWidget( field )
         if fmt is not None: field.setText(fmt%(getattr(adata,tag)))
-        layout.addStretch(1)
+        #layout.addStretch(1)
         field.valueChanged.connect(connection)
        
 
@@ -185,22 +187,54 @@ class FilePicker(QTabWidget):
         self.addTab( self.calibdata, "Analysis Data" )
         
         
-    def _makeCalibTab(self):
+    def _makeCalibTab(self, style='radio'):
 
         # label, tag=attribute name, format,connection
-        calibtabitems=(
-            ("22Na:", "Na", None, self.setFilePath),
-            ("60Co:", "Co", None, self.setFilePath),
-            ("137Cs:", "Cs", None, self.setFilePath),
-            ("AmBe:", "AmBe", None, self.setFilePath),
-            ("TAC:", "TAC", None, self.setFilePath),
-            )
         layout=QVBoxLayout()
-        for label, tag, fmt, conn in calibtabitems:
-            self._makeTabItem(layout, FileField, label, tag, fmt, conn)
+        if style == 'sortfiles':
+            calibtabitems=(
+                ("22Na:", "Na", None, self.setFilePath),
+                ("60Co:", "Co", None, self.setFilePath),
+                ("137Cs:", "Cs", None, self.setFilePath),
+                ("AmBe:", "AmBe", None, self.setFilePath),
+                ("TAC:", "TAC", None, self.setFilePath),
+                )
+            for label, tag, fmt, conn in calibtabitems:
+                self._makeTabItem(layout, FileField, label, tag, fmt, conn)
 
-        self.calibfiles.setLayout(layout)
-        self.addTab( self.calibfiles, "Calibration" )
+            #self.calibfiles.setLayout(layout)
+        elif style == 'entervalues': 
+            calibtabitems=(
+                 ("Gamma slope [MeV/ch]", "slope", None, self.setCalibData), 
+                 ("Gamma intercept [MeV]", "intercept", None, self.setCalibData), 
+                 ("TAC slope [ns/ch]", "TAC", None, self.setCalibData)
+                 )
+            for label, tag, fmt, conn in calibtabitems:
+                self._makeTabItem(layout, DataField, label, tag, fmt, conn)
+            layout.addStretch(2)
+        else:
+            layout=self._chooseCalibTab()
+        oldlayout=self.calibfiles.layout()
+        if oldlayout is None:
+            self.calibfiles.setLayout(layout)
+        else:
+            print('count',oldlayout.count())
+            # this following code is not obvious, and took some googling. See e.g.
+            #stackoverflow.com/questions/22623151/python-how-to-unassign-layout-from-groupbox-in-pyqt
+            import sip
+            #for i in range(oldlayout.count()):
+            while oldlayout.count():
+                item=oldlayout.takeAt(0)
+                #print(i,item, item.widget())
+                w=item.widget()
+                if w is not None:
+                    w.deleteLater()
+            sip.delete(oldlayout)
+                
+            self.calibfiles.setLayout(layout)
+            
+           
+        #self.addTab( self.calibfiles, "Calibration" )
         self.calibtags=("Na","Cs","AmBe","TAC")
 
     def _makeNE213Tab(self):
@@ -208,7 +242,7 @@ class FilePicker(QTabWidget):
         layout.addWidget( QLabel("NE213:") )
         self.editNE213=FileField("NE213")
         layout.addWidget( self.editNE213 )
-        layout.addStretch(1)
+        #layout.addStretch(1)
         self.editNE213.valueChanged.connect(self.setFilePath)
 
         layout.addWidget( QLabel("NE213:TOF channel") )
@@ -236,6 +270,35 @@ class FilePicker(QTabWidget):
         self.editFC.valueChanged.connect(self.setFilePath)
         self.fcfiles.setLayout(layout)
         self.addTab( self.fcfiles, "Fission Chamber" )
+
+    def _chooseCalibTab(self):
+        tab=QVBoxLayout()
+        layout=QVBoxLayout()
+        group=QGroupBox("Choose calibration option")
+        b1=QRadioButton("Sort files for calibration")
+        b2=QRadioButton("Enter calibration values")
+        # emits toggled
+        b1.toggled.connect(self._chooseCalibMethod)
+        b2.toggled.connect(self._chooseCalibMethod)
+        #b1.setChecked(True)
+        self.radiosort=b1
+        self.radioenter=b2
+        layout.addWidget(b1)
+        layout.addWidget(b2)
+        layout.addStretch(1)
+        group.setLayout(layout)
+        tab.addWidget(group)
+        tab.addStretch(1)
+        return tab
+
+    @pyqtSlot(bool)
+    def _chooseCalibMethod(self, ident):
+        if self.radiosort.isChecked():
+            print('sort')
+            self._makeCalibTab(style='sortfiles')
+        if self.radioenter.isChecked():
+            print('enter')
+            self._makeCalibTab(style='entervalues')
 
     @pyqtSlot('QString',Path)
     def setFilePath(self, ident, pathname):

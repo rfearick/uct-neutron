@@ -152,7 +152,8 @@ class FilePicker(QTabWidget):
         
         self._makeDataTab()
         self.addTab( self.calibfiles, "Calibration" )
-        self._makeCalibTab()
+        self.calibtabstyle=None
+        self.setCalibTab()
         self._makeNE213Tab()
         self._makeFCTab()
 
@@ -187,8 +188,15 @@ class FilePicker(QTabWidget):
         self.addTab( self.calibdata, "Analysis Data" )
         
         
-    def _makeCalibTab(self, style='radio'):
-
+    def setCalibTab(self, style='radio', data=None):
+        """
+        Set layout of Calibration Tab
+        Default is radiobutton to select either
+            Calibration from sorted list files, or
+            Calibration from entered data.
+        style='sortfiles' or 'entervales' selects these.
+        """
+        if style==self.calibtabstyle: return
         # label, tag=attribute name, format,connection
         layout=QVBoxLayout()
         if style == 'sortfiles':
@@ -201,8 +209,6 @@ class FilePicker(QTabWidget):
                 )
             for label, tag, fmt, conn in calibtabitems:
                 self._makeTabItem(layout, FileField, label, tag, fmt, conn)
-
-            #self.calibfiles.setLayout(layout)
         elif style == 'entervalues': 
             calibtabitems=(
                  ("Gamma slope [MeV/ch]", "slope", None, self.setCalibData), 
@@ -212,30 +218,29 @@ class FilePicker(QTabWidget):
             for label, tag, fmt, conn in calibtabitems:
                 self._makeTabItem(layout, DataField, label, tag, fmt, conn)
             layout.addStretch(2)
+            if data is not None:
+                self.editTAC.setText("%.3f"%(float(data['TAC'],)))
+                self.editslope.setText("%.4f"%(float(data['slope'],)))
+                self.editintercept.setText("%.4f"%(float(data['intercept'],)))
         else:
             layout=self._chooseCalibTab()
+            
         oldlayout=self.calibfiles.layout()
-        if oldlayout is None:
-            self.calibfiles.setLayout(layout)
-        else:
-            print('count',oldlayout.count())
+        if oldlayout is not None:
             # this following code is not obvious, and took some googling. See e.g.
             #stackoverflow.com/questions/22623151/python-how-to-unassign-layout-from-groupbox-in-pyqt
             import sip
             #for i in range(oldlayout.count()):
             while oldlayout.count():
                 item=oldlayout.takeAt(0)
-                #print(i,item, item.widget())
                 w=item.widget()
                 if w is not None:
                     w.deleteLater()
             sip.delete(oldlayout)
                 
-            self.calibfiles.setLayout(layout)
-            
-           
-        #self.addTab( self.calibfiles, "Calibration" )
+        self.calibfiles.setLayout(layout)
         self.calibtags=("Na","Cs","AmBe","TAC")
+        self.calibtabstyle=style
 
     def _makeNE213Tab(self):
         layout=QVBoxLayout()
@@ -294,11 +299,9 @@ class FilePicker(QTabWidget):
     @pyqtSlot(bool)
     def _chooseCalibMethod(self, ident):
         if self.radiosort.isChecked():
-            print('sort')
-            self._makeCalibTab(style='sortfiles')
+            self.setCalibTab(style='sortfiles')
         if self.radioenter.isChecked():
-            print('enter')
-            self._makeCalibTab(style='entervalues')
+            self.setCalibTab(style='entervalues')
 
     @pyqtSlot('QString',Path)
     def setFilePath(self, ident, pathname):
@@ -340,6 +343,7 @@ class FilePicker(QTabWidget):
         """
         set data from entry field.
         """
+        #print(ident,data)
         self.dataChanged.emit(str(ident),str(data)) # notify if file count changed
 
         

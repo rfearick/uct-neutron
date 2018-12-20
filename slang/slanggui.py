@@ -953,6 +953,9 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         C.read(filename)
         try:
             files=C.items('Files')
+            k=dict(files).keys()
+            if 'Na' in k or 'Co' in k or 'Cs' in k or 'AmBe' in k:
+                self.filepick.setCalibTab(style='sortfiles')
             self.filepick.setFiles(dict(files))
         except:
             pass
@@ -964,6 +967,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
             pass # configparser.NoSectionError
         try:
             data=C.items('Calibration')
+            self.filepick.setCalibTab(style='entervalues',data=dict(data))
             self.calibration.setData(dict(data))
         except:
             pass # configparser.NoSectionError
@@ -1099,13 +1103,16 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         """
         tag is same as attribute name
         """
+        if data=='': return
         try:
             fdata=float(data)
         except:
-            logger.error(tag+"is not a float")
+            logger.error(tag+" is not a float")
+            return
         #print(tag, data)
             
         d=AnalysisData()
+        c=Calibration()
         if tag == 'Tgamma':
             #print("d",d.Tgamma)
             d.Tgamma=fdata
@@ -1133,8 +1140,17 @@ class NeutronAnalysisGui(Qt.QMainWindow):
             d.TAC_interval=fdata
             logger.info("TAC interval set to %4.1f"%(fdata,))
         elif tag == "L_threshold":
-            d.L_threshold=data
+            d.L_threshold=fdata
             logger.info("L threshold set to %4.1f"%(fdata,))
+        elif tag == 'TAC':
+            c.TAC=fdata
+            logger.info("TAC calibration set to %.3f"%(fdata,))
+        elif tag == 'slope':
+            c.slope=fdata
+            logger.info("slope set to %.4f"%(fdata,))
+        elif tag == 'intercept':
+            c.intercept=fdata
+            logger.info("intercept set to %.4f"%(fdata,))
         else:
             logger.error("Invalid input")
 

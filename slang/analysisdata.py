@@ -35,7 +35,8 @@ class Calibration(object, metaclass=Singleton):
     __slots__=('EADC','TADC','slope','intercept','TAC')
 
     def __init__(self):
-        pass
+        self.EADC='ADC1'
+        self.TADC='ADC3'
 
     def asDict(self):
         ##return {key: getattr(self,key) for key in self.__slots__}

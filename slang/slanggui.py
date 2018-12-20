@@ -66,7 +66,7 @@ logger=logging.getLogger("neutrons")
 logger.propagate=False  # don't log message via root logger to console
 logger.setLevel(logging.INFO)
 
-from .supportclasses import PlotTreeModel, PlotTreeView
+from .supportclasses import PlotTreeModel, PlotTreeView, EditMatplotlibToolbar
 from .analysisdata import Calibration, AnalysisData
 
 import slang.icons as icons   # part of this package -- toolbar icons
@@ -170,7 +170,8 @@ class SpectrumPlotter(Qt.QObject):
         """
         self._actions={}
         self._active=None
-        tb=fig.canvas.manager.toolbar
+        #tb=fig.canvas.manager.toolbar
+        tb=EditMatplotlibToolbar(fig)
         tb.addSeparator()
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/select_roi.png"), "roi", self._select_roi)
         a.setCheckable(True)
@@ -1070,7 +1071,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         Save files entered in text entry widgets.
         """
         if isinstance(count, int):
-            print("filepaths int",count)
+            #print("filepaths int",count)
             files=self.filepick.files
             calibfiles=set(self.filepick.calibtags)
             if calibfiles.issubset(files.keys()):
@@ -1084,6 +1085,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
                 item=self.tasklistitems[analysis_tasks[2]]
                 item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
         elif isinstance(count, str):
+            # old code for Tgamma field in file tab
             print("not here?")
             try:
                 Tg=float(count)
@@ -1094,7 +1096,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
                     Tcon=d.target_distance/d.speed_of_light  # in ns
                     T0=Tg+Tcon
                     print("Tcon, T0=",Tcon,T0)
-                    d.T0=T0
+                    #d.T0=T0
             except:
                 logger.error("Tgamma is not a float")
 

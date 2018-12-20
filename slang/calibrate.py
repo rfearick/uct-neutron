@@ -16,6 +16,8 @@ from .analysisdata import Calibration, AnalysisData
 from PyQt5 import Qt
 from . import __path__ as packagepath
 
+from .supportclasses import EditMatplotlibToolbar
+
 """
 Calibrate neutron detector using gamma ray sources.
 
@@ -341,11 +343,13 @@ class CalibrationPlotter(object):
         #self.f1=plt.figure("Gamma calibration",(8,8), constrained_layout=True)
         if style=='single':    
             fign=plt.figure("Gamma spectra",page)
+            EditMatplotlibToolbar(fign)
             plt.tight_layout()
         active=self.calibrator.activegamma
         for source in active:
             if style=='multi':
                 fign=plt.figure(source,page)
+                EditMatplotlibToolbar(fign)
             f1=fign
             # plots are interactive - redraw on idle
             f1.canvas.draw_idle()
@@ -373,19 +377,19 @@ class CalibrationPlotter(object):
         self.f5=plt.figure("Gamma calibration",(6,4))
         self.f5.canvas.draw_idle()
         # add our stuff to the toolbar
-        tb=self.f5.canvas.manager.toolbar
+        tb=EditMatplotlibToolbar(self.f5)
         tb.addSeparator()
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/select_ok.png"), "ok", self._calib_ok)
         a.setToolTip("Accept calibration")
         a=tb.addAction(Qt.QIcon(packagepath[0]+"/images/reject.png"), "cancel", self._calib_retry)
         a.setToolTip("Undo calibration")
+        
         self.ax5 =plt.subplot2grid( (4,4), (0,0),colspan=4,rowspan=4)
         if calibrated:
             chmax=max(chans)
             xt=np.linspace(0.0,chmax*1.1,100.0)
             self.ax5.plot(chans,edges,'bo')
-            self.ax5.plot(xt,intercept+xt*slope)
-                
+            self.ax5.plot(xt,intercept+xt*slope)               
         plt.xlabel('Energy [MeV]')
         plt.ylabel('Channel')
         plt.tight_layout()
@@ -432,6 +436,7 @@ class CalibrationPlotter(object):
         taccalstep=d.TAC_interval #ns
         #f2=plt.figure("TAC calibration", constrained_layout=True)
         f2=plt.figure("TAC calibration")
+        EditMatplotlibToolbar(f2)
         f2.canvas.draw_idle()
         data,yl,xl=self.calibrator.hTAC.get_plotlabels()
         tacslope,tacintercept,peakpos=self.calibrator.calibrateTAC(data)

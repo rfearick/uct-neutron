@@ -12,7 +12,20 @@ import sys
 from PyQt5 import Qt
 import slang.icons as icons
 
-
+def EditMatplotlibToolbar(fig):
+    """
+    Remove some items from the toolbar of figure fig 
+    """
+    #tbact.text(): ['Home','Back','Forward',None,'Pan','Zoom',Subplots','Customize',
+    #                 None, 'Save']
+    tb=fig.canvas.manager.toolbar
+    tbact=tb.actions()
+    for tba in tbact:
+        txt=tba.text()
+        #print(txt)
+        if txt in ['Subplots','Customize']:
+            tba.setVisible(False)
+    return tb
 
 class PlotTreeModel(Qt.QStandardItemModel):
     """

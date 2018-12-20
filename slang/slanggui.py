@@ -1118,19 +1118,15 @@ class NeutronAnalysisGui(Qt.QMainWindow):
             d.Tgamma=fdata
             if 'TAC' in self.calibration.keys():
                 Tcon=d.target_distance/d.speed_of_light  # in ns
-                T0=fdata+Tcon
-                logger.info("Tgamma set to %6.2f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
-                d.T0=T0
+                logger.info("Tgamma set to %.3f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,d.T0))
             else:
-                logger.info("Tgamma set to %6.2f"%(fdata,))
+                logger.info("Tgamma set to %.3f"%(fdata,))
                 
         elif tag == 'target_distance':
             d.target_distance=fdata
             if 'TAC' in self.calibration.keys():
                 Tcon=d.target_distance/d.speed_of_light  # in ns
-                T0=d.Tgamma+Tcon
-                d.T0=T0
-                logger.info("Tdist set to %5.3f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,T0))
+                logger.info("Tdist set to %5.3f, Tcon=%5.1f, T0=%5.1f"%(fdata,Tcon,d.T0))
             else:
                 logger.info("Tdist set to %5.3f"%(fdata,))
         elif tag == 'calibration_gain':

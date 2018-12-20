@@ -35,6 +35,7 @@ class Calibration(object, metaclass=Singleton):
     __slots__=('EADC','TADC','slope','intercept','TAC')
 
     def __init__(self):
+        # make these the defaults
         self.EADC='ADC1'
         self.TADC='ADC3'
 
@@ -113,7 +114,7 @@ class AnalysisData(object, metaclass=Singleton):
     TAC_interval          -- spacing in ns of peaks from TAC calibrator setting 
     """
     
-    __slots__=['speed_of_light','target_distance','target_distance_in_ch','T0',
+    __slots__=['speed_of_light','target_distance','target_distance_in_ch',
                'T0_in_ch','Tgamma','calibration_gain','TAC_interval', 'L_threshold' ]
     
     def __init__(self):
@@ -126,7 +127,12 @@ class AnalysisData(object, metaclass=Singleton):
         self.calibration_gain=4.0
         self.L_threshold=2.5       # MeVee
         self.Tgamma=0.0
-        self.T0=0.0
+
+    def _getT0(self):
+        T0=self.Tgamma+self.target_distance/self.speed_of_light
+        return T0
+    
+    T0=property(_getT0,doc="target_distance/c+Tgamma")
 
     def getData(self):
         """

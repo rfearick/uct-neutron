@@ -23,7 +23,6 @@ SpectrumPlot -- handle start of sort/interaction with update timer
 """
 
 import sys
-#sys.path.append("..") # for eventlist.py
 import os
 from . import __path__ as packagepath
 
@@ -46,22 +45,20 @@ GROUP_NE213=ADC1+ADC2+ADC3
 GROUP_MONITOR=ADC4
 GROUP_FC=ADC1+ADC3
 
-
 from PyQt5 import Qt, QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 import numpy as np
 import matplotlib
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
-matplotlib.rcParams['toolbar'] = 'toolmanager'
+#matplotlib.rcParams['toolbar'] = 'toolmanager'
 matplotlib.rcParams['toolbar'] = 'toolbar2'
 import matplotlib.pyplot as plt
 import matplotlib.path as path
 from matplotlib.widgets import SpanSelector, PolygonSelector
 import configparser
-import logging
 
-#logging.basicConfig(level=logging.INFO)
+import logging
 logger=logging.getLogger("neutrons")
 logger.propagate=False  # don't log message via root logger to console
 logger.setLevel(logging.INFO)
@@ -75,7 +72,6 @@ import time
 plt.ion()       # turn on interactive mode of matplotlib
 
 from matplotlib.backend_tools import ToolBase, ToolToggleBase
-
 
 def generatepathname( basename, extension=".dat" ):
     """
@@ -91,6 +87,8 @@ def generatepathname( basename, extension=".dat" ):
     -------
 
     filename:   str, full path for generated file name
+
+    Note: unused for now.
     """
     i=1
     filename="{}{}{}".format(basename, str(i).zfill(4), extension)
@@ -126,7 +124,6 @@ class SpectrumPlotter(Qt.QObject):
         self.opened=False
         self.tree=tree
         self.branchname=tree.text()
-        #print('branch',branchname)
         self.name=name
         self.xname=xname if xname is not None else "channel"
         self.yname=yname if yname is not None else "counts per channel"
@@ -135,7 +132,6 @@ class SpectrumPlotter(Qt.QObject):
         self.lasso=None
         self.gate=None
         self.calibration=Calibration()
-        #print("plot object created")
         self.timer=Qt.QTimer()
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.update)
@@ -159,6 +155,7 @@ class SpectrumPlotter(Qt.QObject):
         self.figure=fig
         fig.canvas.manager.window.closing.connect(self.closed)
         if self.unsorted: self.timer.start()
+        # toolmanager: does not work well yet (mpl 2.2)
         #fig.canvas.manager.toolbar.add_toolitem(
         #    'Dump', "mygroup",0, "drive.png", "DumpTool",False)
         #fig.canvas.manager.toolmanager.add_tool('Dump', self.nDumpTool)
@@ -183,14 +180,11 @@ class SpectrumPlotter(Qt.QObject):
         a.setToolTip("Save histo data to file")
         
     def _select_roi(self):
-        #print("select roi")
         if self._active == 'roi':
-            #print("exit roi")
             self._active=None
             self._actions['roi'].setChecked(False)
             self.lasso=None
         else:
-            #print("enter roi")
             self._active='roi'
             self._actions['roi'].setChecked(True)
             # lasso disappears if window closed and reopened. Must check super
@@ -201,21 +195,18 @@ class SpectrumPlotter(Qt.QObject):
                     #from polygonlasso import MyLassoSelector
                     #self.lasso=MyLassoSelector(ax,self.select2dGate,useblit=False)
                     self.lasso=PolygonSelector(ax,self.select2dGate,useblit=False,
-                            lineprops=dict(color='c', linestyle='-', linewidth=2, alpha=0.5))
-                    #print("lasso")
+                            lineprops=dict(color='c', linestyle='-',
+                                           linewidth=2, alpha=0.5))
                 else:
                     self.lasso=SpanSelector(ax,self.select1dregion,"horizontal",
                             rectprops = dict(facecolor='blue', alpha=0.5))
        
     def _save_histo(self):
-        #print("enter savehisto")
         print("Listing the spectrum")
-        #print(self.figure)
         for p in SpectrumPlotter.openplotlist:
             if p.figure==self.figure:
                 filename,_=Qt.QFileDialog.getSaveFileName(None,'Save file',
                                                       '.',"Text data (*.dat)")
-                #print(filename)
                 if filename == '': return
                 #if os.path.exists(filename):
                     # code here to prevent overwrite
@@ -236,14 +227,27 @@ class SpectrumPlotter(Qt.QObject):
         """
         p=self
         h=p.histo
-        adc=h.adc1
-        x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
-        if x is None:
-            x=np.arange(0.0,float(h.size1))
-        with open(filename,"w") as f:
-            for j in range(len(x)):
-                print(x[j], p.histo.data[j], file=f)
-                    
+        if h.dims==1:
+            adc=h.adc1
+            x,xl=p._getCalibratedScale(adc,h,"chan.",h.size1) ##xl->self.xname?
+            if x is None:
+                x=np.arange(0.0,float(h.size1))
+            with open(filename,"w") as f:
+                for j in range(len(x)):
+                    print(x[j], p.histo.data[j], file=f)
+        elif h.dims==2:
+            adc=h.adc1
+            x,xl=p._getCalibratedScale(h.adc1,h,"chan.",h.size1) ##xl->self.xname?
+            if x is None:
+                x=np.arange(0.0,float(h.size1))
+            y,yl=p._getCalibratedScale(h.adc2,h,"chan.",h.size2) ##xl->self.xname?
+            if y is None:
+                y=np.arange(0.0,float(h.size2))
+            with open(filename,"w") as f:
+                for i,xi in enumerate(x):
+                    for j,yj in enumerate(y):
+                        print(xi, yj, p.histo.data[i][j], file=f)
+  
     def select1dregion(self,lo,hi):
         h=self.histo
         x,xl=self._getCalibratedScale(h.adc1,h,"",h.size1)
@@ -260,7 +264,6 @@ class SpectrumPlotter(Qt.QObject):
                 #print("update")
                 self.parent.filepick.editTgamma.setText("%.2f"%(mean,))
                 self.parent.setAnalysisData("Tgamma", mean)
-                
 
     def select2dGate(self, verts):
         print(verts)
@@ -285,7 +288,6 @@ class SpectrumPlotter(Qt.QObject):
                   
             h.set_gate(text)
             logger.info("Gate %s set"%(text,))
-
 
     def drawPlot(self,h):
         """
@@ -348,8 +350,7 @@ class SpectrumPlotter(Qt.QObject):
             m,xl=h.calib
             x=np.arange(0.0,float(size),1.0)*m
         return x, xl
-        
-    
+
     @pyqtSlot()
     def update(self):
         """
@@ -577,9 +578,10 @@ def SetupFCSort(parent):
     CreatePlot( parent, tree, branch, h1, "FC Adc 1")
     CreatePlot( parent, tree, branch, h3, "FC Adc 3")
     CreatePlot( parent, tree, branch, h4, "FC Adc 4")
-    CreatePlot( parent, tree, branch, h13, "FC Adc1 v Adc3", xname="Long", yname="TOF")
-
+    CreatePlot( parent, tree, branch, h13, "FC Adc1 v Adc3",
+                xname="Long", yname="TOF")
     return S
+
 
 class Task(Qt.QObject):
     """
@@ -702,7 +704,6 @@ class NeutronAnalysisGui(Qt.QMainWindow):
         self.filewidget.setLayout(vlayout)
         self.mainwin.addWidget(self.filewidget)
 
-               
         self.taskwidget=Qt.QWidget()
         vlayout=Qt.QVBoxLayout()
         self.tasklist=Qt.QListWidget(self)

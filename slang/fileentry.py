@@ -3,16 +3,14 @@ import configparser
 
 from PyQt5 import Qt, QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
-
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QVBoxLayout, QHBoxLayout,
-                             QLabel, QGroupBox, QRadioButton)
-from PyQt5.QtWidgets import QLineEdit
+                             QLabel, QGroupBox, QRadioButton, QLineEdit)
 
 import logging
 from . import analysisdata
 
 """
-Gather the file names needed for analysis
+Gather the file names and data needed for analysis
 """
 
 scaler_names=['sc#01','sc#02','sc#03','sc#04','sc#05','sc#06']
@@ -70,7 +68,6 @@ class FileField(QLineEdit):
             mpapath=pp.with_suffix(".mpa")
             scalers=self.getScalerData(mpapath)
             self.valueChanged.emit(self.tag,pp)
-        
 
     def getScalerData( self, filepath ):
         """
@@ -135,7 +132,6 @@ class FilePicker(QTabWidget):
     fileChanged=pyqtSignal(int)
     dataChanged=pyqtSignal('QString','QString')
     def __init__(self):
-
         super().__init__()
         self.calibdata  = QWidget()
         self.calibfiles = QWidget()
@@ -167,7 +163,6 @@ class FilePicker(QTabWidget):
         if fmt is not None: field.setText(fmt%(getattr(adata,tag)))
         #layout.addStretch(1)
         field.valueChanged.connect(connection)
-       
 
     def _makeDataTab(self):
         # label, tag=attribute name, format,connection
@@ -186,8 +181,7 @@ class FilePicker(QTabWidget):
         
         self.calibdata.setLayout(layout)
         self.addTab( self.calibdata, "Analysis Data" )
-        
-        
+
     def setCalibTab(self, style='radio', data=None):
         """
         Set layout of Calibration Tab
@@ -337,7 +331,6 @@ class FilePicker(QTabWidget):
         self.editL_threshold.setText("%3.1f"%(adata.L_threshold,))
         self.editTgamma.setText("%.2f"%(adata.Tgamma,))
 
-        
     @pyqtSlot('QString','QString')
     def setCalibData(self, ident, data):
         """

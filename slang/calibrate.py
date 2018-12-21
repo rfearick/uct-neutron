@@ -41,10 +41,12 @@ Assumes all gamma calibration histos are same len.
 """
 
 # calibration data
+"""
 chans=[None,None,None,None]
 edges=[1.062,0.477,3.42,4.20]
 slope,intercept=0.0,0.0
 calibration=(None,None)
+"""
 
 edges=[]
 chans=[]
@@ -97,7 +99,6 @@ class Calibrator(object):
         self.calibration=Calibration()
         self.TACcalibration=(None,None)
         self.logger=logging.getLogger("neutrons")
-
 
     def sort( self ):
         """
@@ -154,10 +155,9 @@ class Calibrator(object):
                 slope, intercept in channel/ns,channel
                 peakpos is list of peak positions in spectrum, may be used in plots
         """
-
+        # scan through data and get mean peak positions in a fairly crude search
         peakpos=[]
         N=len(data)
-        # scan through data and get mean peak positions in a fairly crude search
         x=np.arange(N)
         i=2
         while i<N-6:
@@ -183,13 +183,9 @@ class Calibrator(object):
         # from peakpos, avoid 'method of fools'
         for i in range(N):
             diff+=(peakpos[i+N]-peakpos[i])/N**2
-        #print('mean peak spacing in TAC spectrum=', diff)
-        #print('TAC calibration=',taccalstep/diff," ns/ch (for 20 ns tac calibrator)")
 
         # from linregress
         tacslope, tacintercept,r,p,stderr=linregress(peakpos, np.arange(len(peakpos))*taccalstep)
-        #print('TAC calibration=',taccalstep/tacslope," n/chs (linregress)")
-        #logger=logging.getLogger("neutrons")
         self.logger.info('mean peak spacing in TAC spectrum=%4.1f ch with calibrator setting %3.0f ns'%( diff,taccalstep))
         self.logger.info('TAC calibration=%5.3f ns/ch (%3.0f ns calibrator setting)'%(taccalstep/diff,taccalstep))
         self.logger.info('TAC calibration=%5.3f %s, %5.3f'%(tacslope," ns/ch (linregress)",tacintercept))
@@ -223,6 +219,7 @@ class Calibrator(object):
         return calgamma
 
     def resetGammaCalibration(self):
+        #This is brute force
         self.calibration.slope=None
         self.calibration.intercept=None
         del self.calibration.slope
@@ -258,8 +255,8 @@ class CalibrationPlotter(object):
         diffdata=np.zeros(len(data))
         diffdata[1:-1]=(data[2:]-data[0:-2])/2
         slope,intercept=calib
-        iscalib=slope!=None and intercept!=None
-        isylimit=ylimits[0]!=None and ylimits[1]!=None
+        iscalib=(slope!=None and intercept!=None)
+        isylimit=(ylimits[0]!=None and ylimits[1]!=None)
         e=np.arange(hist.size1)
         lo,hi,dlo,dhi=self.limit_calib_spectrum(data, diffdata)
         #print(lo,hi,dlo,dhi)
@@ -308,7 +305,6 @@ class CalibrationPlotter(object):
         dlo=np.argmin(diffdata)
         dhi=np.argmax(diffdata)
         return (lo,hi,dlo,dhi)
-        
 
     def plot_gamma_spectra( self, tag=None, style='multi' ):
         """
@@ -361,7 +357,7 @@ class CalibrationPlotter(object):
             h=self.histo[source]
             # plot spectrum
             self.plot_calib_spectrum( axesgroup, h, calibration, (0,120), (None,None),source)
-            # save info indict
+            # save info in dict
             self.figures[source]={}
             self.figures[source]['figure']=f1
             self.figures[source]['axes']=axesgroup
@@ -462,7 +458,7 @@ class CalibrationPlotter(object):
         """
         self.ax5.cla()
         active=self.calibrator.activegamma
-        calibration_done=slope is not None and intercept is not None
+        calibration_done=(slope is not None and intercept is not None)
         self.ax5.plot(chans,edges,'bo')
         chmax=int(max(chans)*1.1)
         xt=np.linspace(0.0,chmax,100.0)
@@ -497,7 +493,6 @@ class CalibrationPlotter(object):
     def openPlot(self):
         self.plot_all_spectra()
 
-       
     def insertPlot(self, tree, ploticon):
         """
         insert plot repr into list view widget
@@ -602,13 +597,11 @@ class CalibrationPlotter(object):
                         xytext=(x+dx,y+offtexty*dy), textcoords='data',
                         bbox=dict(boxstyle="round", fc="w"),
                         arrowprops=dict(arrowstyle="->",
-                                        connectionstyle="angle,angleA=-90,angleB=180"),
+                                   connectionstyle="angle,angleA=-90,angleB=180"),
                         picker=picker)
         ax.axvline(x)
-
         return ann
-        
-        
+
     def pick_callback(self, event):
         """
         Callback for pick of calibration energy choice.
@@ -645,8 +638,7 @@ class CalibrationPlotter(object):
                 self.figures[source]['click']=currentfig['figure'].canvas.mpl_connect('button_press_event', self.pos_callback)
         
         return True
-        
-        
+
     def fig_callback(self, event):
         """
         Turn on multicursor when cursor is over gamma calibration axes.

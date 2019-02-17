@@ -101,7 +101,7 @@ class PlotTreeModel(Qt.QStandardItemModel):
         def _walk(item):
             i=0
             while item.child(i) is not None:
-                print(item.child(i).text())
+                #print(item.child(i).text())
                 _walk(item.child(i))
                 i+=1
            

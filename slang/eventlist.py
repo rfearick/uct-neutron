@@ -180,8 +180,8 @@ class EventSource(object):
                 nunknown0+=1
                 continue
             if len(b)<4:
-                print("nunknown0",nunknown0)
-                print('stop',b)
+                #print("nunknown0",nunknown0)
+                #print('stop',b)
                 return
             # event type is in b[3]
             etype=b[3]
@@ -192,7 +192,7 @@ class EventSource(object):
 #                if b[0]!=0xff and b[1]!=0xff and b[2]!=0xff:
 #                if etype & b[0] & b[1] & b[2]!=SYNCHRON:
                 if b != b'\xff\xff\xff\xff':
-                    print("Hmm. Markers are more complicated")
+                    pass#print("Hmm. Markers are more complicated")
                 yield SYNCHRON,0,0,0
             elif (etype & RTC) != 0:
                 yield RTC,0,0,0
@@ -226,7 +226,7 @@ class EventSource(object):
         if padded:
             b=f.read(2)
             if b!= b'\xff\xff':
-                print("Pad error")
+                pass#print("Pad error")
         values=[0,0,0,0]
         for i in range(TOTALADCS):
             if isadc[i]==1:
@@ -250,7 +250,7 @@ class EventSource(object):
     def closeFile(self):
         if self.f:
             self.f.close()
-            print("file closed")
+            #print("file closed")
         self.f=0
         
 
@@ -427,7 +427,7 @@ class Sorter(object):
         #histlist=self.histlist
         # collect stats
         maxcount=self.maxcount
-        print("maxcount",maxcount)
+        #print("maxcount",maxcount)
         ntimer=0
         nrtc=0
         nmark=0
@@ -462,20 +462,20 @@ class Sorter(object):
                     nunknown1+=1
             else:
                 nunknown2+=1
-                print("huh?")
+                #print("huh?")
             if maxcount is not None and nevent==maxcount: break
 
         t1=time.perf_counter()
-        print("Sort: elapsed time ",t1-t0, " s")
-        print("Timer",ntimer)
-        print("Events",nevent)
-        print("RTC",nrtc)
-        print("Marks",nmark)
-        print("Nadc",nadc,nadc[0]+nadc[1]+nadc[2]+nadc[3])
-        print("unknown1",nunknown1)
-        print("unknown2",nunknown2)
+        #print("Sort: elapsed time ",t1-t0, " s")
+        #print("Timer",ntimer)
+        #print("Events",nevent)
+        #print("RTC",nrtc)
+        #print("Marks",nmark)
+        #print("Nadc",nadc,nadc[0]+nadc[1]+nadc[2]+nadc[3])
+        #print("unknown1",nunknown1)
+        #print("unknown2",nunknown2)
         self.stream.closeFile() # close event stream
-        print("file closed")
+        #print("file closed")
         return sortadc
 
     def setExtraSorter( self, sorter, histlist):
@@ -509,10 +509,10 @@ if __name__ == "__main__":
     h2=Histogram(E, ADC1+ADC2+ADC3, 'ADC2', 512)
     h3=Histogram(E, ADC1+ADC2+ADC3, 'ADC3', 512)
     h4=Histogram(E, ADC4, 'ADC4', 512)
-    print(len(h2.data), h2.adc1,h2.divisor1, h2.adcrange1, h2.index1, h2.size1)
+    #print(len(h2.data), h2.adc1,h2.divisor1, h2.adcrange1, h2.index1, h2.size1)
     h21=Histogram(E, ADC1+ADC2+ADC3, ('ADC1','ADC2'), (256,256),label=('L','S'))
-    print(np.shape(h21.data), h21.adc1,h21.divisor1, h21.adcrange1, h21.index1, h21.size1)
-    print(np.shape(h21.data), h21.adc2,h21.divisor2, h21.adcrange2, h21.index2, h21.size2)
+    #print(np.shape(h21.data), h21.adc1,h21.divisor1, h21.adcrange1, h21.index1, h21.size1)
+    #print(np.shape(h21.data), h21.adc2,h21.divisor2, h21.adcrange2, h21.index2, h21.size2)
     histlist=[h1,h2,h3,h4,h21]
     S=Sorter( E, histlist)
     sortadc=[]
@@ -563,7 +563,7 @@ if __name__ == "__main__":
     print("unknown",nunknown)
     """
     t1=time.perf_counter()
-    print("Elapsed time:", t1-t0, " s")
+    #print("Elapsed time:", t1-t0, " s")
 
     plt.figure(1)
     data,yl,xl=h21.get_plotlabels()

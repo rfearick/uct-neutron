@@ -147,7 +147,7 @@ class SpectrumPlotter(Qt.QObject):
         fig=plt.figure(self.branchname+' - '+self.name, constrained_layout=True)
         self._initToolbar(fig)
         nfig=fig.number
-        print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
+        #print('fig',plt.get_fignums(),nfig, self.fig, h.dims, self.unsorted, self.lasso)
         self.drawPlot(h)
         self.opened=True
         fig.canvas.draw_idle()
@@ -202,7 +202,7 @@ class SpectrumPlotter(Qt.QObject):
                             rectprops = dict(facecolor='blue', alpha=0.5))
        
     def _save_histo(self):
-        print("Listing the spectrum")
+        #print("Listing the spectrum")
         for p in SpectrumPlotter.openplotlist:
             if p.figure==self.figure:
                 filename,_=Qt.QFileDialog.getSaveFileName(None,'Save file',
@@ -251,22 +251,22 @@ class SpectrumPlotter(Qt.QObject):
     def select1dregion(self,lo,hi):
         h=self.histo
         x,xl=self._getCalibratedScale(h.adc1,h,"",h.size1)
-        print("lohi",lo,hi)
+        #print("lohi",lo,hi)
         ilo,ihi=np.searchsorted(x,(lo,hi))
-        print(ilo,ihi)
+        #print(ilo,ihi)
         mean=np.sum(x[ilo:ihi]*h.data[ilo:ihi])/np.sum(h.data[ilo:ihi])
-        print("pos",mean)
+        #print("pos",mean)
         plt.axvline(mean)
         if h.dims==1 and h.adc1=="ADC3":
             # update TOF gamma
-            print("update Tgamma")
+            #print("update Tgamma")
             if 'TAC' in self.parent.calibration.keys():
                 #print("update")
                 self.parent.filepick.editTgamma.setText("%.2f"%(mean,))
                 self.parent.setAnalysisData("Tgamma", mean)
 
     def select2dGate(self, verts):
-        print(verts)
+        #print(verts)
         text,ok=Qt.QInputDialog.getItem(self.parent, "Gates",
                                         "Select gate:",
                                         ["neutrons","gammas"], 0, False)
@@ -277,7 +277,7 @@ class SpectrumPlotter(Qt.QObject):
             data,xl,yl=h.get_plotdata()
             self.gate.gatearray=np.full_like(data,False,dtype=np.bool)
             nx,ny=np.shape(self.gate.gatearray)
-            print('gate',nx,ny)
+            #print('gate',nx,ny)
             p=path.Path(verts)
             for ix in range(nx):
                 for iy in range(ny):
@@ -1038,16 +1038,16 @@ class NeutronAnalysisGui(Qt.QMainWindow):
                 logger.info("saveData got an unknown item")
         def _savehisto(path, h):
             if h.dims==1:
-                print(path+"/data")
+                #print(path+"/data")
                 dset=f.create_dataset(path+"/data",data=h.data)
                 dset.attrs['type']="h1"
                 dset.attrs['adc']=h.adc1
                 dset.attrs['adcrange']=h.adcrange1
                 dset.attrs['size']=h.size1
                 dset.attrs['divisor']=h.divisor1
-                print(h.adc1,h.size1,h.adcrange1,h.divisor1,len(h.data))
+                #print(h.adc1,h.size1,h.adcrange1,h.divisor1,len(h.data))
             elif h.dims==2:
-                print(path+"/data")
+                #print(path+"/data")
                 dset=f.create_dataset(path+"/data",data=h.data)
                 dset.attrs['type']="h2"
                 dset.attrs['adc1']=h.adc1
@@ -1058,7 +1058,7 @@ class NeutronAnalysisGui(Qt.QMainWindow):
                 dset.attrs['size2']=h.size2
                 dset.attrs['divisor1']=h.divisor1
                 dset.attrs['divisor2']=h.divisor2
-                print(h.adc1,h.size1,h.adcrange1,h.divisor1,len(h.data))
+                #print(h.adc1,h.size1,h.adcrange1,h.divisor1,len(h.data))
         filename,_=Qt.QFileDialog.getSaveFileName(self,'Save file',
                                                   '.',"HDF Data File (*.hdf5)")
         if filename == '': return
@@ -1087,16 +1087,16 @@ class NeutronAnalysisGui(Qt.QMainWindow):
                 item.setFlags(item.flags()|QtCore.Qt.ItemIsEnabled)
         elif isinstance(count, str):
             # old code for Tgamma field in file tab
-            print("not here?")
+            #print("not here?")
             try:
                 Tg=float(count)
                 d=AnalysisData()
-                print("d",d.Tgamma)
+                #print("d",d.Tgamma)
                 d.Tgamma=Tg
                 if 'TAC' in self.calibration.keys():
                     Tcon=d.target_distance/d.speed_of_light  # in ns
                     T0=Tg+Tcon
-                    print("Tcon, T0=",Tcon,T0)
+                    #print("Tcon, T0=",Tcon,T0)
                     #d.T0=T0
             except:
                 logger.error("Tgamma is not a float")
@@ -1155,12 +1155,13 @@ class NeutronAnalysisGui(Qt.QMainWindow):
 
     def setMaxEvent(self):
         maxevent=self.editMaxevent.text()
-        print("maxevent",maxevent)
+        #print("maxevent",maxevent)
         if maxevent == 0 or maxevent == "None" or maxevent == "none":
             self.maxeventcount = None
         else:
             try:
                 self.maxeventcount = int(maxevent)
+                logger.info("Maxevent set to %d"%(self.maxeventcount,))
             except:
                 logger.error("Invalid input")
         #self.editMaxevent.setText("None")

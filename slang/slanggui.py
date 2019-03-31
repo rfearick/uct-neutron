@@ -264,6 +264,7 @@ class SpectrumPlotter(Qt.QObject):
                 #print("update")
                 self.parent.filepick.editTgamma.setText("%.2f"%(mean,))
                 self.parent.setAnalysisData("Tgamma", mean)
+            self._select_roi() # delselect roi
 
     def select2dGate(self, verts):
         #print(verts)
@@ -288,6 +289,7 @@ class SpectrumPlotter(Qt.QObject):
                   
             h.set_gate(text)
             logger.info("Gate %s set"%(text,))
+            self._select_roi() # deselectroi
 
     def drawPlot(self,h):
         """

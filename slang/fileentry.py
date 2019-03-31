@@ -188,12 +188,14 @@ class FilePicker(QTabWidget):
         Default is radiobutton to select either
             Calibration from sorted list files, or
             Calibration from entered data.
-        style='sortfiles' or 'entervales' selects these.
+        style='sortfiles' or 'entervalues' selects these.
         """
         if style==self.calibtabstyle: return
         # label, tag=attribute name, format,connection
         layout=QVBoxLayout()
         if style == 'sortfiles':
+            field=Qt.QPushButton("Rather: Enter calibration values")
+            layout.addWidget(field)
             calibtabitems=(
                 ("22Na:", "Na", None, self.setFilePath),
                 ("60Co:", "Co", None, self.setFilePath),
@@ -203,7 +205,10 @@ class FilePicker(QTabWidget):
                 )
             for label, tag, fmt, conn in calibtabitems:
                 self._makeTabItem(layout, FileField, label, tag, fmt, conn)
+            field.clicked.connect(self._resetCalibToEnter)
         elif style == 'entervalues': 
+            field=Qt.QPushButton("Rather: Sort files for calibration")
+            layout.addWidget(field)
             calibtabitems=(
                  ("Gamma slope [MeV/ch]", "slope", None, self.setCalibData), 
                  ("Gamma intercept [MeV]", "intercept", None, self.setCalibData), 
@@ -216,6 +221,7 @@ class FilePicker(QTabWidget):
                 self.editTAC.setText("%.3f"%(float(data['TAC'],)))
                 self.editslope.setText("%.4f"%(float(data['slope'],)))
                 self.editintercept.setText("%.4f"%(float(data['intercept'],)))
+            field.clicked.connect(self._resetCalibToSort)
         else:
             layout=self._chooseCalibTab()
             
@@ -235,6 +241,15 @@ class FilePicker(QTabWidget):
         self.calibfiles.setLayout(layout)
         self.calibtags=("Na","Cs","AmBe","TAC")
         self.calibtabstyle=style
+
+    @pyqtSlot()
+    def _resetCalibToSort(self):
+        self.setCalibTab( style='sortfiles' )
+
+    @pyqtSlot()
+    def _resetCalibToEnter(self):
+        self.setCalibTab( style='entervalues' )
+    
 
     def _makeNE213Tab(self):
         layout=QVBoxLayout()

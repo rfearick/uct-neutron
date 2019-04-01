@@ -386,6 +386,8 @@ class SpectrumPlotter(Qt.QObject):
         """
         Stop timer when window closed.
         """
+        # ignore if close icon clicked twice
+        if (self.opened is False) or not self in self.openplotlist: return 
         self.opened=False
         self.openplotlist.remove(self)
         self.timer.stop()

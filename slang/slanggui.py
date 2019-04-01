@@ -274,7 +274,12 @@ class SpectrumPlotter(Qt.QObject):
         self.gate=Gate2d(text, verts)
         gatelist[text]=self.gate
         h=self.histo
+        adc1=h.adc1
+        adc2=h.adc2
+        
         if h.dims==2:
+            x,xl=self._getCalibratedScale(h.adc1,h,"",h.size1)
+            y,yl=self._getCalibratedScale(h.adc2,h,"",h.size2)
             data,xl,yl=h.get_plotdata()
             self.gate.gatearray=np.full_like(data,False,dtype=np.bool)
             nx,ny=np.shape(self.gate.gatearray)
@@ -282,7 +287,8 @@ class SpectrumPlotter(Qt.QObject):
             p=path.Path(verts)
             for ix in range(nx):
                 for iy in range(ny):
-                    if p.contains_point((float(iy),float(ix))):
+                    #if p.contains_point((float(iy),float(ix))):
+                    if p.contains_point((x[iy],y[ix])):
                         self.gate.gatearray[ix,iy]=True
                         #print(ix,iy,'True')
                     #else: print(ix,iy, 'False')
@@ -345,7 +351,10 @@ class SpectrumPlotter(Qt.QObject):
                     m=calib.TAC*factor  ## /
                     x=np.arange(0.0,float(size),1.0)
                     x=x*m  ## m/x
-                    xl="T [ns]"              
+                    xl="T [ns]"
+                else:
+                    x=np.arange(0.0,float(size),1.0)
+                   
             except:
                 x=np.arange(0.0,float(size),1.0)
         else:
@@ -430,7 +439,7 @@ def SetupSort(parent):
         h21.set_gate('neutrons')
         
     # define sort process
-    S=Sorter( E, histlist, maxcount=maxeventcount)
+    S=Sorter( E, histlist, gatelist=gatelist, maxcount=maxeventcount)
 
     # create tree for plots widget
     tree=parent.plotmodel
@@ -446,13 +455,31 @@ def SetupSort(parent):
     CreatePlot( parent, tree, branch, h13, "NE213 Adc1 v Adc3", xname="Long", yname="TOF" )
 
     if Tgamma > 0.0: # Tgamma is set
+        if 'neutrons' in gatelist:
+            h1g=Histogram(E, GROUP_NE213, 'ADC1', 512)
+            h2g=Histogram(E, GROUP_NE213, 'ADC2', 512)
+            h3g=Histogram(E, GROUP_NE213, 'ADC3', 512)
+            h4g=Histogram(E, GROUP_MONITOR, 'ADC4', 512)
+            h21g=Histogram(E, GROUP_NE213, ('ADC1','ADC2'), (256,256),label=('L','S'))
+            h13g=Histogram(E, GROUP_NE213, ('ADC1','ADC3'), (256,256),label=('L','T'))
+
         h3t=Histogram(E, GROUP_NE213, 'ADC3', 1024)
         hE=Histogram(E, GROUP_NE213, 'Cal3', 1024, label="En", calib=(250.0/1024,"En [MeV]"))
         hv=Histogram(E, GROUP_NE213, 'Cal3', 1024, label="vn", calib=(0.001,"beta_n"))
         CreatePlot( parent, tree, branch, h3t, "Calc tof", yname="tof" )
         CreatePlot( parent, tree, branch, hE, "Calc E", yname="n Energy" )
         CreatePlot( parent, tree, branch, hv, "Calc v", yname="v_n" )
-        histlist2=[h3t,hE,hv]
+        if 'neutrons' in gatelist:
+            CreatePlot( parent, tree, branch, h1g, "NE213 Adc 1 (gated)" )
+            CreatePlot( parent, tree, branch, h2g, "NE213 Adc 2 (gated)" )
+            CreatePlot( parent, tree, branch, h3g, "NE213 Adc 3 (gated)" )
+            CreatePlot( parent, tree, branch, h4g, "NE213 Adc 4 (gated)" )
+            CreatePlot( parent, tree, branch, h21g, "NE213 Adc1 v Adc2 (gated)", xname="Long", yname="Short" )
+            CreatePlot( parent, tree, branch, h13g, "NE213 Adc1 v Adc3 (gated)", xname="Long", yname="TOF" )
+            histlist2=[h3t,hE,hv,h1g,h2g,h3g,h4g,h21g,h13g]
+        else:
+            histlist2=[h3t,hE,hv]
+            
         c=CalculatedEventSort(None)
         S.setExtraSorter(c.sort, histlist2)
 
@@ -515,6 +542,13 @@ class CalculatedEventSort(object):
         h3t = h[0]
         hE = h[1]
         hv = h[2]
+        if 'neutrons' in gatelist:
+            h1g=h[3]            
+            h2g=h[4]            
+            h3g=h[5]            
+            h4g=h[6]            
+            h21g=h[7]            
+            h13g=h[8]            
         
         Tof=self.chT0-v2+np.random.rand()-0.5   # calculate TOF and spread randomly over channel
         if v0<self.cutL: return
@@ -548,6 +582,13 @@ class CalculatedEventSort(object):
         hE.increment([0,0,En,0])
         #h3.increment(v)
         hv.increment([0,0,int(betan*1000.0+0.5),0])
+
+        h1g.increment(v)
+        h2g.increment(v)
+        h3g.increment(v)
+        h4g.increment(v)
+        h21g.increment(v)
+        h13g.increment(v)
 
 def SetupFCSort(parent):
     """
